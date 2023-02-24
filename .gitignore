@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# ignore data set folder
+data_sets/
+AG_NEWS_KAGGLE/
