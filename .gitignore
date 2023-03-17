@@ -131,3 +131,6 @@ dmypy.json
 # ignore data set folder
 data_sets/
 AG_NEWS_KAGGLE/
+
+# ignore for privacy reasons
+embeddings.py

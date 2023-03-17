@@ -1,15 +1,15 @@
 from torch.optim import AdamW
 from transformers import get_scheduler
+import logging
 # Progress bar
 from tqdm.auto import tqdm
 
-
+# TODO probably training steps messed up!!
 class Trainer:
-    def __init__(self, train_dataloader, model, device, num_epochs=2):
+    def __init__(self, train_dataloader, model, device, num_epochs, logging):
         self.model = model
         self.device = device
         self.train_dataloader = train_dataloader
-        self.scheduler = None
         self.num_epochs = num_epochs
         # Number of training steps
         self.num_training_steps = num_epochs * len(self.train_dataloader)
@@ -21,7 +21,7 @@ class Trainer:
 
     def train(self):
         # Set the progress bar
-        progress_bar = tqdm(range(self.num_training_steps))
+        # progress_bar = tqdm(range(self.num_training_steps)) # had a problem with the progress bar before... or not?
 
         # Tells the model that we are training the model
         self.model.train()
@@ -44,8 +44,11 @@ class Trainer:
                 # Clear the gradients
                 self.optimizer.zero_grad()
                 # Update the progress bar
-                progress_bar.update(1)
+                #progress_bar.update(1)
 
     def get_model(self):
         return self.model
 
+    def set_train_loader(self, train_loader):  # TODO maybe problems
+        self.train_dataloader = train_loader
+        self.num_training_steps = self.num_epochs * len(self.train_dataloader)

@@ -4,8 +4,10 @@ import torch
 # Model performance evaluation
 import evaluate
 
+import logging
+
 class Evaluator:
-    def __init__(self, eval_dataloader, model, device):
+    def __init__(self, eval_dataloader, model, device, logging):
         self.eval_dataloader = eval_dataloader
         self.model = model
         self.device = device
@@ -53,3 +55,6 @@ class Evaluator:
 
         # Compute the metric
         print(self.metric.compute())
+
+    def get_predictions(self):
+        return self.predictions_all
