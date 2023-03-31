@@ -22,13 +22,17 @@ logger = logging.getLogger(__name__)
 
 
 class Main:
-    def __init__(self, path=DataPath.SMALL, mode=Mode.AL, model_name="bert-base-cased", fixed_centroids=False,
+    def __init__(self, path=DataPath.SMALL, mode=Mode.AL, model_name="bert-base-cased",
                  n_epochs=2):
-        # Settings
-        # Just in case even though it would probably not affect other methods than al_plus
-        self.fixed_centroids = False
-
+        # Set-Up
         self.data = Preprocessor(path)
+
+        self.fixed_centroids = True
+        # If Data sample too small there exists a possibility that there might not be a representative of
+        # each class. This will lead to problems when picking centroids. Therefor make the choice fixed.
+        if len(self.data.test_data) > 4000:
+            self.fixed_centroids = False
+            # Set data Labels to ambiguous number but only if fixed_centroids = false
 
         self.strong_labeler = StrongLabeller(self.data.control)
         # Load model
@@ -46,7 +50,6 @@ class Main:
         elif mode.value == 1:
             self.al()
         elif mode.value == 2:
-            self.fixed_centroids = fixed_centroids
             self.al_plus()
         else:
             self.testing_grounds()
@@ -97,7 +100,6 @@ class Main:
 
     def al_plus(self):
         # TODO: No iteration yet as uncertainty sampling not implemented in any way...
-        # TODO: pick centroids before initial labelling and data split so that always have representatives
         # Load evaluation and test data into Data loader, not touched by Weakly labeller
         eval_dataloader = DataLoader(dataset=self.data.to_arrow_data(self.data.eval_data), batch_size=4)
         self.evaluator.set_eval_loader(eval_dataloader)
@@ -106,9 +108,16 @@ class Main:
         remaining, init_sample = train_test_split(self.data.unlabelled, test_size=0.02, random_state=42)
         # Now label the init sample manually
         self.data.labelled = self.strong_labeler.label(init_sample)
+
         # --------------- AL PLUS ---------------
         # now pick 4 centroids, later randomly?
-        centroids = self.data.get_first_reps_4_class(self.data.labelled, keep=True)
+        if self.fixed_centroids:
+            # Reasoning behind this in the __init__ method.
+            # Centroids are only picked for K-Means, nothing else changes, they might be part of Eval, Test or Train set
+            centroids = self.data.get_first_reps_4_class(self.data.control, keep=True)
+        else:
+            centroids = self.data.get_first_reps_4_class(self.data.labelled, keep=True)
+
         # Now label the remaining data with weakly labeller
         embeddings = self.data.get_embeddings_from_df(remaining)
         # Centroids passed do KMeansLabeler are not numbers
@@ -143,4 +152,4 @@ class Main:
 
 
 if __name__ == "__main__":
-    m = Main(mode=Mode.STANDARD)
+    m = Main(mode=Mode.AL_PLUS)

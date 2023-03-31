@@ -12,7 +12,7 @@ class Trainer:
         self.train_dataloader = train_dataloader
         self.num_epochs = num_epochs
         # Number of training steps
-        self.num_training_steps = num_epochs * len(self.train_dataloader)
+        self.num_training_steps = 0
         self.optimizer = AdamW(params=self.model.parameters(), lr=5e-6)
         self.scheduler = get_scheduler(name="linear",
                                        optimizer=self.optimizer,

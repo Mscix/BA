@@ -20,9 +20,10 @@ class Preprocessor:
         # Don't forget, that still have the test.csv
         # set the index_col as Index, which is the custom index in relation to the whole set
         df = pd.read_csv(f'/Users/misha/Desktop/Bachelor-Thesis/BA/{path.value}', index_col='Index')
-        self.control = df
+
         # df = df[['Class Index', 'Description']]  # only these two columns
         df['Class Index'] = df['Class Index'] - 1  # Cross Class entropy expects [0,3] instead of [1,4]
+        self.control = df
         self.df = df
         # Split Training set 80%, Test set 10%, Validation set 10%
         self.train_data = df.sample(frac=0.8, random_state=42)
@@ -90,6 +91,7 @@ class Preprocessor:
         for class_id in range(4):
             # row = df.loc[df['Class Index'] == class_id].iloc[0]  # is this reliable?
             row = Preprocessor.get_first_by_class(df, class_id)
+            print(row)
             centroids.append(np.array(eval(row['Embedding'])))
             to_drop.append(row.name)  # gets the index of specified row
             logging.info('Centroid for Class ID: ' + str(class_id) + '\n' + row.to_string())

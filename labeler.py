@@ -3,7 +3,6 @@ from sklearn.cluster import KMeans
 import numpy as np
 
 
-
 class KMeansLabeller:
     def __init__(self, embeddings, centroids, num_clusters=4, dims=1536):
         self.logger = logging.getLogger(__name__)

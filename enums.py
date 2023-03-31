@@ -17,7 +17,8 @@ class Mode(Enum):
     STANDARD = 0
     AL = 1
     AL_PLUS = 2
-    TEST = 3
+    AL_PLUS_DEV = 3
+    TEST = 4
 
 
 

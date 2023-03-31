@@ -10,16 +10,3 @@ def configure_logging():
             logging.StreamHandler()
         ]
     )
-
-
-"""
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-formatter = logging.Formatter('%(name)s - %(filename)s - %(levelname)s \n Message :: %(message)s')
-
-file_handler = logging.FileHandler('logs.log')
-file_handler.setFormatter(formatter)
-
-logger.addHandler(file_handler)
-"""
