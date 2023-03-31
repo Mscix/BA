@@ -4,9 +4,9 @@ import logging
 # Progress bar
 from tqdm.auto import tqdm
 
-# TODO probably training steps messed up!!
+
 class Trainer:
-    def __init__(self, train_dataloader, model, device, num_epochs, logging):
+    def __init__(self,  model, device, num_epochs, train_dataloader=None):
         self.model = model
         self.device = device
         self.train_dataloader = train_dataloader
@@ -20,8 +20,11 @@ class Trainer:
                                        num_training_steps=self.num_training_steps)
 
     def train(self):
+        if not self.train_dataloader:
+            raise Exception('Before training, Trainer requires DataLoader to be set. Please use '
+                            '\'set_train_loader(DataLoader)\'')
         # Set the progress bar
-        # progress_bar = tqdm(range(self.num_training_steps)) # had a problem with the progress bar before... or not?
+        progress_bar = tqdm(range(self.num_training_steps))  # had a problem with the progress bar before... or not?
 
         # Tells the model that we are training the model
         self.model.train()
@@ -44,11 +47,11 @@ class Trainer:
                 # Clear the gradients
                 self.optimizer.zero_grad()
                 # Update the progress bar
-                #progress_bar.update(1)
+                progress_bar.update(1)
 
     def get_model(self):
         return self.model
 
-    def set_train_loader(self, train_loader):  # TODO maybe problems
+    def set_train_loader(self, train_loader):
         self.train_dataloader = train_loader
         self.num_training_steps = self.num_epochs * len(self.train_dataloader)

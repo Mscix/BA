@@ -1,107 +1,146 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from data_sets.data_enum import DataPath
+from enums import DataPath, Mode
 from trainer import Trainer
 from preprocessor import Preprocessor
 from evaluator import Evaluator
 import logging
-from transformers import AutoModelForSequenceClassification, pipeline
+from logging_config import configure_logging
+from transformers import AutoModelForSequenceClassification
 import torch
 from torch.utils.data import DataLoader
+from labeler import KMeansLabeller, StrongLabeller
+import pandas as pd
+from sklearn.model_selection import train_test_split
+import numpy as np
 
-LOGGER = None
+# Call to Logger config
+configure_logging()
 
-# TODO: Change this structure to a class based one and not method based!
-
-
-def standard_ml():
-    """ Main program """
-    data = Preprocessor(DataPath.SMALL, LOGGER)
-
-    # Empty cache
-    torch.cuda.empty_cache()
-    # DataLoader, shuffle: data reshuffled each epoch, batch: 4 instances, processed at once
-    train_set, test_set = data.to_arrow_data()
-    train_dataloader = DataLoader(dataset=train_set, shuffle=True, batch_size=4)
-    eval_dataloader = DataLoader(dataset=test_set, batch_size=4)
-
-    # Load model
-    model = AutoModelForSequenceClassification.from_pretrained("bert-base-cased", num_labels=4)
-    # Use GPU if it is available
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    model.to(device)
-
-    print('TRAINING')
-    trainer = Trainer(train_dataloader, model, device, 2, LOGGER)
-    trainer.train()
-    trained_model = trainer.get_model()
-    print('EVALUATING')
-    evaluator = Evaluator(eval_dataloader, trained_model, device, LOGGER)
-    evaluator.eval()
-    print('DONE')
+logger = logging.getLogger(__name__)
 
 
-def al_ml():
-    # iterations = 5
-    samples = [0.3, 0.3, 0.3]  # relative sample size to the data set
-    # first with random sampling
-    data = Preprocessor(DataPath.MEDIUM, LOGGER)
-    # Load evaluation data into Data loader
-    eval_dataloader = DataLoader(dataset=data.get_test_data(), batch_size=4)
-    # Empty cache
-    torch.cuda.empty_cache()
-    # get a initial sample in accordance to dataset size
-    init_sample = data.get_random_sample(0.3)
-    # init sample size?
-    train_dataloader = DataLoader(dataset=init_sample, shuffle=True, batch_size=4)
-    # Load model
-    model = AutoModelForSequenceClassification.from_pretrained("bert-base-cased", num_labels=4)
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    model.to(device)
-    print('INIT TRAINING')
-    trainer = Trainer(train_dataloader, model, device, 2, LOGGER)
-    trainer.train()
-    # for i in range(iterations):
-    for s in samples:
-        i = 1
-        print('TRAINING ' + str(i))
-        train_sample = data.get_random_sample(s)
-        train_dataloader = DataLoader(dataset=train_sample, shuffle=True, batch_size=4)
-        trainer.set_train_loader(train_dataloader)
-        trainer.train()
+class Main:
+    def __init__(self, path=DataPath.SMALL, mode=Mode.AL, model_name="bert-base-cased", fixed_centroids=False,
+                 n_epochs=2):
+        # Settings
+        # Just in case even though it would probably not affect other methods than al_plus
+        self.fixed_centroids = False
 
-    trained_model = trainer.get_model()
-    print('EVALUATING')
-    evaluator = Evaluator(eval_dataloader, trained_model, device, LOGGER)
-    evaluator.eval()
+        self.data = Preprocessor(path)
 
+        self.strong_labeler = StrongLabeller(self.data.control)
+        # Load model
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=4)
 
-def al_plus():
-    # first find out if the model was trained on this data set
-    # get embeddings (text) from Chatgpt
-    # Actually same workflow but when sampling for the annotator distribute some of the instances to the Large model
-    # and some to the actual annotator, don't care first which give to which
-    # => read from embeddings
-    # compare with cosine similarity
-    # don't want to use pinecone because it consts as well although it should be a good scalabel db
+        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        self.model.to(device)
+        self.trainer = Trainer(self.model, device, n_epochs)
+        self.evaluator = Evaluator(device)
+        # Empty cache
+        torch.cuda.empty_cache()
 
-    # first step embeddings für alle descriptions zu ziehen nimm
-    # in einer JSON file speichern, diese ins gitignore packen und schauen ob bedarf für SQL ist...
-    # DB bedarf sollte erst da sein wenn ganzer daten satz genutzt wird
+        if mode.value == 0:
+            self.standard_ml()
+        elif mode.value == 1:
+            self.al()
+        elif mode.value == 2:
+            self.fixed_centroids = fixed_centroids
+            self.al_plus()
+        else:
+            self.testing_grounds()
 
-    # weakly label all
-    # compare uncertainty = distance?
-    print('Nothing')
+    def standard_ml(self):
+        # Just for understanding, could have just pasted unlabelled for now
+        self.data.labelled = self.strong_labeler.label(self.data.unlabelled)
+        train_dataloader = DataLoader(dataset=self.data.to_arrow_data(self.data.labelled),
+                                      shuffle=True, batch_size=4)
 
-def set_up_logger():
-    logging.basicConfig(filename='logs.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
-    logger = logging.getLogger(__name__)
-    return logger
+        eval_dataloader = DataLoader(dataset=self.data.to_arrow_data(self.data.eval_data), batch_size=4)
+        self.evaluator.set_eval_loader(eval_dataloader)
+
+        self.trainer.set_train_loader(train_dataloader)
+        self.trainer.train()
+
+        trained_model = self.trainer.get_model()
+        self.evaluator.set_model(trained_model)
+        self.evaluator.eval()
+
+    def al(self):
+        samples = [0.3] * 3  # samples = [0.3, 0.3, 0.3]
+
+        eval_dataloader = DataLoader(dataset=self.data.to_arrow_data(self.data.eval_data))
+        self.evaluator.set_eval_loader(eval_dataloader)
+
+        self.data.unlabelled, init_sample = train_test_split(self.data.unlabelled, test_size=0.3, random_state=42)
+        self.data.labelled = self.strong_labeler.label(init_sample)
+        train_set = self.data.to_arrow_data(self.data.labelled)
+        train_dataloader = DataLoader(dataset=train_set, shuffle=True, batch_size=4)
+
+        logger.info('TRAINING')
+        self.trainer.set_train_loader(train_dataloader)
+        self.trainer.train()
+        for s in samples:
+            self.data.unlabelled, train_sample = train_test_split(self.data.unlabelled, test_size=s, random_state=42)
+            self.data.labelled = pd.concat([self.data.labelled, self.strong_labeler.label(train_sample)])
+            train_sample = self.data.to_arrow_data(self.data.labelled)
+            train_dataloader = DataLoader(dataset=train_sample, shuffle=True, batch_size=4)
+            self.trainer.set_train_loader(train_dataloader)
+            self.trainer.train()
+
+        logger.info('EVALUATING')
+        trained_model = self.trainer.get_model()
+        self.evaluator.set_model(trained_model)
+        self.evaluator.eval()
+        # Accuracy is sometimes 0 lol probably because the eval set is very smol
+
+    def al_plus(self):
+        # TODO: No iteration yet as uncertainty sampling not implemented in any way...
+        # TODO: pick centroids before initial labelling and data split so that always have representatives
+        # Load evaluation and test data into Data loader, not touched by Weakly labeller
+        eval_dataloader = DataLoader(dataset=self.data.to_arrow_data(self.data.eval_data), batch_size=4)
+        self.evaluator.set_eval_loader(eval_dataloader)
+        test_dataloader = DataLoader(dataset=self.data.to_arrow_data(self.data.test_data), batch_size=4)
+        # Split unlabelled data into 2% that will be manually annotated and 98% that will be processed further
+        remaining, init_sample = train_test_split(self.data.unlabelled, test_size=0.02, random_state=42)
+        # Now label the init sample manually
+        self.data.labelled = self.strong_labeler.label(init_sample)
+        # --------------- AL PLUS ---------------
+        # now pick 4 centroids, later randomly?
+        centroids = self.data.get_first_reps_4_class(self.data.labelled, keep=True)
+        # Now label the remaining data with weakly labeller
+        embeddings = self.data.get_embeddings_from_df(remaining)
+        # Centroids passed do KMeansLabeler are not numbers
+        wl = KMeansLabeller(embeddings, centroids, num_clusters=4,  dims=1536)
+        logger.info('K-Means prediction')
+        y_predict = wl.get_fit_predict()  # returns a list of Class indexes
+        # Set labels of data points, the order of the rows is the same
+        # TODO: Check that I can just assign this way and do not have to check for Index
+        remaining['Class Index'] = y_predict
+        self.data.weakly_labelled = remaining
+        self.data.unlabelled = None  # unset attribute as all instances are at least weakly labelled now
+        # ---- TRAINING ----
+        # Train model on the combined data set of labelled and weakly labelled combined
+        train_set = pd.concat([self.data.labelled, self.data.weakly_labelled])  # just different attributes concat
+        # --------------- AL PLUS ---------------
+
+        train_set = self.data.to_arrow_data(train_set)
+        train_dataloader = DataLoader(dataset=train_set, shuffle=True, batch_size=4)
+        logger.info('TRAINING')
+        self.trainer.set_train_loader(train_dataloader)
+        self.trainer.train()
+
+        logger.info('EVALUATING')
+        trained_model = self.trainer.get_model()
+        self.evaluator.set_model(trained_model)
+        self.evaluator.eval()
+
+    @staticmethod
+    def testing_grounds():
+        data = Preprocessor(DataPath.BIG)
+        print(list(map(lambda n: np.array(eval(n)), data.unlabelled['Embedding'].tolist())))
 
 
 if __name__ == "__main__":
-    LOGGER = set_up_logger()
-    standard_ml()
-    # al_ml()
-    #al_plus()
+    m = Main(mode=Mode.STANDARD)

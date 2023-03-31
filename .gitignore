@@ -133,4 +133,7 @@ data_sets/
 AG_NEWS_KAGGLE/
 
 # ignore for privacy reasons
-embeddings.py
+/embeddings.py
+
+# ignore logs
+/experiment.log

@@ -6,8 +6,9 @@ import evaluate
 
 import logging
 
+
 class Evaluator:
-    def __init__(self, eval_dataloader, model, device, logging):
+    def __init__(self, device, model=None, eval_dataloader=None):
         self.eval_dataloader = eval_dataloader
         self.model = model
         self.device = device
@@ -24,10 +25,12 @@ class Evaluator:
         # A list for all predicted labels
         self.predictions_all = []
 
-
-
-
     def eval(self):
+        if not self.eval_dataloader:
+            raise Exception('Before evaluating, Evaluator requires DataLoader to be set. Please use '
+                            '\'set_eval_loader(DataLoader)\'')
+        if not self.model:
+            raise Exception('Before evaluating, please set the model that should be evaluated.')
         # Tells the model that we are evaluting the model performance
         self.model.eval()
 
@@ -58,3 +61,9 @@ class Evaluator:
 
     def get_predictions(self):
         return self.predictions_all
+
+    def set_eval_loader(self, eval_loader):
+        self.eval_dataloader = eval_loader
+
+    def set_model(self, trained_model):
+        self.model = trained_model
