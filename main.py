@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os.path
 
-from enums import DataPath, Mode
+from enums import DataPath, Mode, EvalSet
 from trainer import Trainer
 from preprocessor import Preprocessor
 from evaluator import Evaluator
@@ -22,10 +23,24 @@ logger = logging.getLogger(__name__)
 
 
 class Main:
-    def __init__(self, path=DataPath.SMALL, mode=Mode.AL, model_name="bert-base-cased",
-                 n_epochs=2):
+    def __init__(self, path=DataPath.SMALL, eval_set_type=EvalSet.EVALUATION_SET, mode=Mode.AL,
+                 model_name="bert-base-cased", weak_labeler='K-Means', n_epochs=2, al_iterations=3,
+                 sampling_method='Random'):
         # Set-Up
         self.data = Preprocessor(path)
+        # eval_set_type
+        # Alternative split but meassure accuracy on both Validation and training set
+        if eval_set_type == EvalSet.TRAINING_SET:
+            print('Dont split')
+        elif eval_set_type == EvalSet.EVALUATION_SET:
+            print('Import whole /test/test.csv set')
+        elif eval_set_type == EvalSet.TEST_SET:
+            print('Get Subset of /test/test.csv set')
+        else:
+            print('Validation set meaning split into two')
+
+        # Model Performance on Training set
+        # Model Performance on Evaluation set
 
         self.fixed_centroids = True
         # If Data sample too small there exists a possibility that there might not be a representative of
@@ -45,14 +60,39 @@ class Main:
         # Empty cache
         torch.cuda.empty_cache()
 
-        if mode.value == 0:
+        if mode == Mode.STANDARD:
             self.standard_ml()
-        elif mode.value == 1:
+        elif mode == Mode.AL:
             self.al()
-        elif mode.value == 2:
+        elif mode == Mode.AL_PLUS:
             self.al_plus()
         else:
             self.testing_grounds()
+
+        # Set up Logging parameters
+        # General: Mode, Model, Weak Labeler, Training Set, Evaluation Set, Epochs, AL Iterations, Sampling Method,
+        # Metrics: Accuracy, Recall, Precision, F1
+
+        # Compute Metrics
+        accuracy, recall, precision, f1 = self.evaluator.metrics_results
+        """
+        self.logging_data = {
+            'Mode': mode,
+            'Model Name': model_name,
+            'Weak Labeler': weak_labeler,
+            'Train Set': path,
+            'Eval Set': eval_set_type,
+            'Epochs': n_epochs,
+            'AL Iterations': al_iterations,
+            'Sampling Method': sampling_method,
+            'Accuracy': accuracy,
+            'Recall': recall,
+            'Precision': precision,
+            'F1': f1
+        }
+        """
+        self.logging_data = [mode.value, model_name, weak_labeler, path.value, eval_set_type.value, n_epochs,
+                             al_iterations, sampling_method, accuracy, recall, precision, f1]
 
     def standard_ml(self):
         # Just for understanding, could have just pasted unlabelled for now
@@ -81,7 +121,6 @@ class Main:
         train_set = self.data.to_arrow_data(self.data.labelled)
         train_dataloader = DataLoader(dataset=train_set, shuffle=True, batch_size=4)
 
-        logger.info('TRAINING')
         self.trainer.set_train_loader(train_dataloader)
         self.trainer.train()
         for s in samples:
@@ -91,8 +130,6 @@ class Main:
             train_dataloader = DataLoader(dataset=train_sample, shuffle=True, batch_size=4)
             self.trainer.set_train_loader(train_dataloader)
             self.trainer.train()
-
-        logger.info('EVALUATING')
         trained_model = self.trainer.get_model()
         self.evaluator.set_model(trained_model)
         self.evaluator.eval()
@@ -112,7 +149,7 @@ class Main:
         # --------------- AL PLUS ---------------
         # now pick 4 centroids, later randomly?
         if self.fixed_centroids:
-            # Reasoning behind this in the __init__ method.
+            # Reasoning behind this is in the __init__ method.
             # Centroids are only picked for K-Means, nothing else changes, they might be part of Eval, Test or Train set
             centroids = self.data.get_first_reps_4_class(self.data.control, keep=True)
         else:
@@ -120,9 +157,7 @@ class Main:
 
         # Now label the remaining data with weakly labeller
         embeddings = self.data.get_embeddings_from_df(remaining)
-        # Centroids passed do KMeansLabeler are not numbers
         wl = KMeansLabeller(embeddings, centroids, num_clusters=4,  dims=1536)
-        logger.info('K-Means prediction')
         y_predict = wl.get_fit_predict()  # returns a list of Class indexes
         # Set labels of data points, the order of the rows is the same
         # TODO: Check that I can just assign this way and do not have to check for Index
@@ -136,11 +171,9 @@ class Main:
 
         train_set = self.data.to_arrow_data(train_set)
         train_dataloader = DataLoader(dataset=train_set, shuffle=True, batch_size=4)
-        logger.info('TRAINING')
         self.trainer.set_train_loader(train_dataloader)
         self.trainer.train()
 
-        logger.info('EVALUATING')
         trained_model = self.trainer.get_model()
         self.evaluator.set_model(trained_model)
         self.evaluator.eval()
@@ -152,4 +185,17 @@ class Main:
 
 
 if __name__ == "__main__":
+    file_path = 'logging.csv'
+    df = pd.DataFrame()
     m = Main(mode=Mode.AL_PLUS)
+    columns = ['Mode', 'Model Name', 'Weak Labeler', 'Train Set', 'Eval Set', 'Epochs', 'AL Iterations',
+               'Sampling Method', 'Accuracy', 'Recall', 'Precision', 'F1']
+    # set to array the logs
+    if os.path.exists(file_path):
+        df = pd.read_csv(file_path)
+    else:
+        df = pd.DataFrame(columns=columns)
+
+    df.loc[len(df)] = m.logging_data
+    df.to_csv(file_path, index=True, header=not os.path.exists(file_path), columns=columns)
+

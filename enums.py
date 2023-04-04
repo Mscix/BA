@@ -14,11 +14,19 @@ class DataPath(Enum):
 
 
 class Mode(Enum):
-    STANDARD = 0
-    AL = 1
-    AL_PLUS = 2
-    AL_PLUS_DEV = 3
-    TEST = 4
+    STANDARD = 'Standard Machine Learning'
+    AL = 'Active Learning'
+    AL_PLUS = 'Active Learning Plus'
+    TEST = 'Testing Grounds'
+    AL_PLUS_DEV = 'Active Learning Plus in Development'
+
+
+class EvalSet(Enum):
+    # What set should the Model be evaluated on.
+    TRAINING_SET = 'Training Set'  # Used for training the model
+    EVALUATION_SET = 'Evaluation Set'  # The complete Evaluation set should be untouched until after model training
+    TEST_SET = 'Test Set'  # Subset of Evaluation set
+    VALIDATION_SET = 'Validation Set'  # Used for training and fine-tuning the model
 
 
 

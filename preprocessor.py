@@ -16,7 +16,7 @@ import random
 
 class Preprocessor:
     def __init__(self, path: DataPath):  # pass mode?
-        self.logger = logging.getLogger(__name__)
+        # self.logger = logging.getLogger(__name__)
         # Don't forget, that still have the test.csv
         # set the index_col as Index, which is the custom index in relation to the whole set
         df = pd.read_csv(f'/Users/misha/Desktop/Bachelor-Thesis/BA/{path.value}', index_col='Index')
@@ -39,9 +39,6 @@ class Preprocessor:
         self.labelled = None
         self.weakly_labelled = None
         self.unlabelled = self.train_data
-
-        self.logger.info('DataSet size used: ' + path.value)
-        self.logger.info('Tokenizer model used: ' + model)
 
     def to_arrow_data(self, df):
         # This method transforms df so that Dataloader can take as input
@@ -91,7 +88,6 @@ class Preprocessor:
         for class_id in range(4):
             # row = df.loc[df['Class Index'] == class_id].iloc[0]  # is this reliable?
             row = Preprocessor.get_first_by_class(df, class_id)
-            print(row)
             centroids.append(np.array(eval(row['Embedding'])))
             to_drop.append(row.name)  # gets the index of specified row
             logging.info('Centroid for Class ID: ' + str(class_id) + '\n' + row.to_string())

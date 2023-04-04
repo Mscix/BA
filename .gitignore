@@ -137,3 +137,5 @@ AG_NEWS_KAGGLE/
 
 # ignore logs
 /experiment.log
+/logging.csv
+/experiment.csv
