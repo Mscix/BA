@@ -135,7 +135,6 @@ AG_NEWS_KAGGLE/
 # ignore for privacy reasons
 /embeddings.py
 
-# ignore logs
-/experiment.log
-/logging.csv
-/experiment.csv
+wandb/
+wandb
+wandb-debug.log

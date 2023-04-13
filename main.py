@@ -1,43 +1,35 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os.path
-
-from enums import DataPath, Mode, EvalSet
+from enums import Data, Mode, EvalSet, SamplingMethod
 from trainer import Trainer
 from preprocessor import Preprocessor
 from evaluator import Evaluator
-import logging
-from logging_config import configure_logging
+
 from transformers import AutoModelForSequenceClassification
 import torch
-from torch.utils.data import DataLoader
 from labeler import KMeansLabeller, StrongLabeller
+from sampler import Sampler
 import pandas as pd
-from sklearn.model_selection import train_test_split
-import numpy as np
+import wandb
 
-# Call to Logger config
-configure_logging()
-
-logger = logging.getLogger(__name__)
 
 
 class Main:
-    def __init__(self, path=DataPath.SMALL, eval_set_type=EvalSet.EVALUATION_SET, mode=Mode.AL,
-                 model_name="bert-base-cased", weak_labeler='K-Means', n_epochs=2, al_iterations=3,
-                 sampling_method='Random'):
+    def __init__(self, data_type=Data.SMALL, eval_set_type=EvalSet.EVALUATION_SET, mode=Mode.AL,
+                 model_name="bert-base-cased", weak_labeler='K-Means', default_epochs=1, al_iterations=3,
+                 sampling_method=SamplingMethod.RANDOM):
         # Set-Up
-        self.data = Preprocessor(path)
+        self.data = Preprocessor(data_type.value['path'])
         # eval_set_type
-        # Alternative split but meassure accuracy on both Validation and training set
+        # Alternative split but measure accuracy on both Validation and training set
         if eval_set_type == EvalSet.TRAINING_SET:
-            print('Dont split')
+            pass
         elif eval_set_type == EvalSet.EVALUATION_SET:
-            print('Import whole /test/test.csv set')
+            pass
         elif eval_set_type == EvalSet.TEST_SET:
-            print('Get Subset of /test/test.csv set')
+            pass
         else:
-            print('Validation set meaning split into two')
+            pass
 
         # Model Performance on Training set
         # Model Performance on Evaluation set
@@ -45,7 +37,7 @@ class Main:
         self.fixed_centroids = True
         # If Data sample too small there exists a possibility that there might not be a representative of
         # each class. This will lead to problems when picking centroids. Therefor make the choice fixed.
-        if len(self.data.test_data) > 4000:
+        if len(self.data.train_data) > 3000:
             self.fixed_centroids = False
             # Set data Labels to ambiguous number but only if fixed_centroids = false
 
@@ -55,147 +47,127 @@ class Main:
 
         device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         self.model.to(device)
-        self.trainer = Trainer(self.model, device, n_epochs)
+        self.trainer = Trainer(self.model, device)
         self.evaluator = Evaluator(device)
+        self.sampler = Sampler()
         # Empty cache
         torch.cuda.empty_cache()
 
-        if mode == Mode.STANDARD:
-            self.standard_ml()
-        elif mode == Mode.AL:
-            self.al()
-        elif mode == Mode.AL_PLUS:
-            self.al_plus()
-        else:
-            self.testing_grounds()
-
-        # Set up Logging parameters
+        # Set up Hyper parameters
         # General: Mode, Model, Weak Labeler, Training Set, Evaluation Set, Epochs, AL Iterations, Sampling Method,
         # Metrics: Accuracy, Recall, Precision, F1
-
-        # Compute Metrics
-        accuracy, recall, precision, f1 = self.evaluator.metrics_results
-        """
-        self.logging_data = {
-            'Mode': mode,
+        hyperparameters = {
+            'Mode': mode.value,
+            'Classes': 4,
             'Model Name': model_name,
             'Weak Labeler': weak_labeler,
-            'Train Set': path,
-            'Eval Set': eval_set_type,
-            'Epochs': n_epochs,
+            'Fixed Weak Labelling': True,  # TODO: false is the case when the weakly model is updated
+            'Data Set': 'AG_NEWS',
+            'Train Set': data_type.value['size'],
+            'Batch Size': 4,
+            'Eval Set': eval_set_type.value,
+            'Epochs': default_epochs,
             'AL Iterations': al_iterations,
-            'Sampling Method': sampling_method,
-            'Accuracy': accuracy,
-            'Recall': recall,
-            'Precision': precision,
-            'F1': f1
+            'AL Batch Size': 4,  # TODO: think maybe make it an array?
+            'Sampling Method': sampling_method.value,
         }
-        """
-        self.logging_data = [mode.value, model_name, weak_labeler, path.value, eval_set_type.value, n_epochs,
-                             al_iterations, sampling_method, accuracy, recall, precision, f1]
 
-    def standard_ml(self):
+        if mode == Mode.STANDARD:
+            self.standard_ml(hyperparameters)
+        elif mode == Mode.AL:
+            self.al(hyperparameters)
+        elif mode == Mode.AL_PLUS:
+            self.al_plus(hyperparameters)
+        else:
+            raise Exception('Invalid Mode')
+
+    def standard_ml(self, hyperparameters):
         # Just for understanding, could have just pasted unlabelled for now
         self.data.labelled = self.strong_labeler.label(self.data.unlabelled)
-        train_dataloader = DataLoader(dataset=self.data.to_arrow_data(self.data.labelled),
-                                      shuffle=True, batch_size=4)
 
-        eval_dataloader = DataLoader(dataset=self.data.to_arrow_data(self.data.eval_data), batch_size=4)
-        self.evaluator.set_eval_loader(eval_dataloader)
+        train_dataloader = self.data.transform_data(self.data.labelled)
 
-        self.trainer.set_train_loader(train_dataloader)
-        self.trainer.train()
+        trained_model = self.trainer.train(train_dataloader)
 
-        trained_model = self.trainer.get_model()
-        self.evaluator.set_model(trained_model)
-        self.evaluator.eval()
+        eval_dataloader = self.data.transform_data(self.data.eval_data)
+        self.evaluator.eval(trained_model, eval_dataloader)
 
-    def al(self):
-        samples = [0.3] * 3  # samples = [0.3, 0.3, 0.3]
+    def al(self, hyperparameters):
+        with wandb.init(project='active-learning-plus', config=hyperparameters):
+            # Difference between epoch and
+            # Too small for small data set
+            # init = 0.05
+            # samples = [0.01] * 3
+            init = 0.2
+            samples = [0.2] * 3
 
-        eval_dataloader = DataLoader(dataset=self.data.to_arrow_data(self.data.eval_data))
-        self.evaluator.set_eval_loader(eval_dataloader)
+            # init 0.05 sample
+            # 1-sample 0.01
+            # 2-sample 0.01
+            # 3-sample 0.01
+            # Get init sample
+            init_sample, self.data.unlabelled = self.sampler.sample(self.data.unlabelled, init)
+            self.data.labelled = self.strong_labeler.label(init_sample)
 
-        self.data.unlabelled, init_sample = train_test_split(self.data.unlabelled, test_size=0.3, random_state=42)
-        self.data.labelled = self.strong_labeler.label(init_sample)
-        train_set = self.data.to_arrow_data(self.data.labelled)
-        train_dataloader = DataLoader(dataset=train_set, shuffle=True, batch_size=4)
+            train_dataloader = self.data.transform_data(self.data.labelled)
+            self.trainer.train(train_dataloader)
 
-        self.trainer.set_train_loader(train_dataloader)
-        self.trainer.train()
-        for s in samples:
-            self.data.unlabelled, train_sample = train_test_split(self.data.unlabelled, test_size=s, random_state=42)
-            self.data.labelled = pd.concat([self.data.labelled, self.strong_labeler.label(train_sample)])
-            train_sample = self.data.to_arrow_data(self.data.labelled)
-            train_dataloader = DataLoader(dataset=train_sample, shuffle=True, batch_size=4)
-            self.trainer.set_train_loader(train_dataloader)
-            self.trainer.train()
-        trained_model = self.trainer.get_model()
-        self.evaluator.set_model(trained_model)
-        self.evaluator.eval()
-        # Accuracy is sometimes 0 lol probably because the eval set is very smol
+            for s in samples:
+                # PROBLEM HERE
+                train_sample, self.data.unlabelled = self.sampler.sample(self.data.unlabelled, s)
+                # Combine/Concat new labelled data with old labelled data
+                self.data.labelled = pd.concat([self.data.labelled, self.strong_labeler.label(train_sample)])
 
-    def al_plus(self):
-        # TODO: No iteration yet as uncertainty sampling not implemented in any way...
-        # Load evaluation and test data into Data loader, not touched by Weakly labeller
-        eval_dataloader = DataLoader(dataset=self.data.to_arrow_data(self.data.eval_data), batch_size=4)
-        self.evaluator.set_eval_loader(eval_dataloader)
-        test_dataloader = DataLoader(dataset=self.data.to_arrow_data(self.data.test_data), batch_size=4)
-        # Split unlabelled data into 2% that will be manually annotated and 98% that will be processed further
-        remaining, init_sample = train_test_split(self.data.unlabelled, test_size=0.02, random_state=42)
-        # Now label the init sample manually
-        self.data.labelled = self.strong_labeler.label(init_sample)
+                train_dataloader = self.data.transform_data(self.data.labelled)
+                self.trainer.train(train_dataloader)
+            eval_dataloader = self.data.transform_data(self.data.eval_data)
+            self.evaluator.eval(self.trainer.model, eval_dataloader)
 
-        # --------------- AL PLUS ---------------
-        # now pick 4 centroids, later randomly?
-        if self.fixed_centroids:
-            # Reasoning behind this is in the __init__ method.
-            # Centroids are only picked for K-Means, nothing else changes, they might be part of Eval, Test or Train set
-            centroids = self.data.get_first_reps_4_class(self.data.control, keep=True)
-        else:
-            centroids = self.data.get_first_reps_4_class(self.data.labelled, keep=True)
+    # TODO at some point weakly labelled and strong labelled are interchangeble because all instances are
+    # TODO chanage name...
+    #  always weakly labelled
+    def al_plus(self, hyperparameters):
+        with wandb.init(project='active-learning-plus', config=hyperparameters):
+            # Too small for small data set
+            # init = 0.05
+            # samples = [0.01] * 3
+            init = 0.2
+            samples = [0.2] * 3
 
-        # Now label the remaining data with weakly labeller
-        embeddings = self.data.get_embeddings_from_df(remaining)
-        wl = KMeansLabeller(embeddings, centroids, num_clusters=4,  dims=1536)
-        y_predict = wl.get_fit_predict()  # returns a list of Class indexes
-        # Set labels of data points, the order of the rows is the same
-        # TODO: Check that I can just assign this way and do not have to check for Index
-        remaining['Class Index'] = y_predict
-        self.data.weakly_labelled = remaining
-        self.data.unlabelled = None  # unset attribute as all instances are at least weakly labelled now
-        # ---- TRAINING ----
-        # Train model on the combined data set of labelled and weakly labelled combined
-        train_set = pd.concat([self.data.labelled, self.data.weakly_labelled])  # just different attributes concat
-        # --------------- AL PLUS ---------------
+            config = wandb.config
+            init_sample, self.data.unlabelled = self.sampler.sample(self.data.unlabelled, init)
+            self.data.labelled = self.strong_labeler.label(init_sample)
 
-        train_set = self.data.to_arrow_data(train_set)
-        train_dataloader = DataLoader(dataset=train_set, shuffle=True, batch_size=4)
-        self.trainer.set_train_loader(train_dataloader)
-        self.trainer.train()
+            # --------------- AL PLUS ---------------
+            weak_labeler = KMeansLabeller(self.data, self.fixed_centroids)
+            self.data.weakly_labelled = weak_labeler.label(self.data.unlabelled)
+            train_set = pd.concat([self.data.labelled, self.data.weakly_labelled])
+            # --------------- AL PLUS ---------------
 
-        trained_model = self.trainer.get_model()
-        self.evaluator.set_model(trained_model)
-        self.evaluator.eval()
+            train_dataloader = self.data.transform_data(train_set)
+            # zwischen jeden training schauen wie gut es läuft
+            self.trainer.train(train_dataloader)
+            for s in samples:
+                sample, self.data.weakly_labelled = self.sampler.sample(self.data.weakly_labelled, s)
+                # Combine/Concat new labelled data with old labelled data
+                self.data.labelled = pd.concat([self.data.labelled, self.strong_labeler.label(sample)])
+                train_set = pd.concat([self.data.labelled, self.data.weakly_labelled])
 
-    @staticmethod
-    def testing_grounds():
-        data = Preprocessor(DataPath.BIG)
-        print(list(map(lambda n: np.array(eval(n)), data.unlabelled['Embedding'].tolist())))
+                train_dataloader = self.data.transform_data(train_set)
+                self.trainer.train(train_dataloader)
+            eval_dataloader = self.data.transform_data(self.data.eval_data)
+            self.evaluator.eval(self.trainer.model, eval_dataloader)
+
+    def proto(self):
+        pass
+
+    def make(self, config):
+        # Unpack Config here return data loader, Eval Loader trainer and so on the logic should not be in the init
+        # Returns DataLoader, E
+        pass
 
 
+# TODO add the ability to log after each iteration???
 if __name__ == "__main__":
-    file_path = 'logging.csv'
-    df = pd.DataFrame()
-    m = Main(mode=Mode.AL_PLUS)
-    columns = ['Mode', 'Model Name', 'Weak Labeler', 'Train Set', 'Eval Set', 'Epochs', 'AL Iterations',
-               'Sampling Method', 'Accuracy', 'Recall', 'Precision', 'F1']
-    # set to array the logs
-    if os.path.exists(file_path):
-        df = pd.read_csv(file_path)
-    else:
-        df = pd.DataFrame(columns=columns)
 
-    df.loc[len(df)] = m.logging_data
-    df.to_csv(file_path, index=True, header=not os.path.exists(file_path), columns=columns)
-
+    m = Main(data_type=Data.BIG, mode=Mode.AL_PLUS)
