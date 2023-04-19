@@ -1,4 +1,3 @@
-from enums import SamplingMethod
 import torch
 import math
 from preprocessor import transform_data
@@ -9,11 +8,11 @@ class Sampler:
     def __init__(self, device):
         self.device = device
 
-    def sample(self, data, sample_size, sampling_method=SamplingMethod.RANDOM, model=None):
+    def sample(self, data, sample_size, sampling_method='Random', model=None):
         # result: (remaining, sampled)
-        if sampling_method == SamplingMethod.RANDOM:
+        if sampling_method == 'Random':
             result = self.random_sampling(data, sample_size)
-        elif sampling_method == SamplingMethod.LC:
+        elif sampling_method == 'LC':
             result = self.least_confidence_sampling(data, sample_size, model)
         else:
             raise Exception('TODO: implement')
