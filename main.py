@@ -163,6 +163,7 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     if not args:
         m = Main(data_type=Data.SMALL, mode=Mode.AL_PLUS)
+        print('lol')
     else:
         m = Main(remote=True, remote_path=args[0])
     m.run()
