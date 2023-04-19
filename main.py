@@ -49,9 +49,9 @@ class Main:
         # Load model
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=4)
 
-        # device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         # device = "mps" if torch.backends.mps.is_available() else "cpu"
-        device = "cpu"
+        # device = "cpu"
         # device = "mps"
         self.model.to(device)
         self.trainer = Trainer(self.model, device)
