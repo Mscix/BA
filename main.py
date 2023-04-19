@@ -48,11 +48,17 @@ class Main:
         self.strong_labeler = StrongLabeller(self.data.control)
         # Load model
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=4)
+        if torch.cuda.is_available():
+            print('CUDA')
+            device = torch.device("cuda")
+        else:
+            print('CPU')
+            device = torch.device("cpu")
 
-        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         # device = "mps" if torch.backends.mps.is_available() else "cpu"
         # device = "cpu"
         # device = "mps"
+
         self.model.to(device)
         self.trainer = Trainer(self.model, device)
         self.evaluator = Evaluator(device)
