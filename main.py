@@ -4,14 +4,12 @@ from enums import Data, Mode, EvalSet, SamplingMethod
 from trainer import Trainer
 from preprocessor import Preprocessor, transform_data
 from evaluator import Evaluator
-
 from transformers import AutoModelForSequenceClassification
 import torch
 from labeler import KMeansLabeller, StrongLabeller
 from sampler import Sampler
 import pandas as pd
 import wandb
-import plotly.graph_objs as go
 import plotter as p
 import matplotlib.pyplot as plt
 import sys
