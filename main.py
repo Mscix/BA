@@ -23,7 +23,8 @@ class Main:
         if remote:
             self.data = Preprocessor(remote_path)
         else:
-            self.data = Preprocessor(data_type.value['path'])
+            path = f'/Users/misha/Desktop/Bachelor-Thesis/BA/' + data_type.value['path']
+            self.data = Preprocessor(path)
 
         # Set-Up
         # eval_set_type

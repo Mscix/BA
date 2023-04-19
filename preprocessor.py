@@ -64,7 +64,7 @@ class Preprocessor:
     def __init__(self, path: str):  # pass mode?
         # Don't forget, that still have the test.csv
         # set the index_col as Index, which is the custom index in relation to the whole set
-        df = pd.read_csv(f'/Users/misha/Desktop/Bachelor-Thesis/BA/{path}', index_col='Index')
+        df = pd.read_csv(path, index_col='Index')
 
         # df = df[['Class Index', 'Description']]  # only these two columns
         df['Class Index'] = df['Class Index'] - 1  # Cross Class entropy expects [0,3] instead of [1,4]
