@@ -18,7 +18,6 @@ class Mode(Enum):
     AL = 'Active Learning'
     AL_PLUS = 'Active Learning Plus'
     TEST = 'Testing Grounds'
-    AL_PLUS_DEV = 'Active Learning Plus in Development'
 
 
 class EvalSet(Enum):

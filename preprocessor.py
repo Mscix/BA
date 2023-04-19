@@ -4,20 +4,17 @@ import pandas as pd
 from transformers import AutoTokenizer
 # Hugging Face Dataset
 from datasets import Dataset
-# from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
-# Label Type encoding:
-# 0: Unlabelled
-# 1: Weakly Labeled (K-Means for ex.)
-# 2: Human Label
-# 3: Random Label
+
+
+def tokenize(data):
+    tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
+    return tokenizer(data["Description"], padding='max_length', truncation=True, max_length=32)
 
 
 def transform_data(df):
-    tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
-
-    tokenize = tokenizer(df["Description"], padding='max_length', truncation=True, max_length=32)
     # This method transforms df so that Dataloader can take as input
+
     # Transform pandas frame into Huggingface Dataset
     hg_train_data = Dataset.from_pandas(df)
     dataset_train = hg_train_data.map(tokenize)
@@ -83,8 +80,7 @@ class Preprocessor:
 
         # This is how the data is split later on
         self.labelled = None
-        self.weakly_labelled = None
-        self.unlabelled = self.train_data
+        self.partial = self.train_data
 
     def transform_data(self, df):
         # This method transforms df so that Dataloader can take as input
@@ -103,7 +99,6 @@ class Preprocessor:
 
     def tokenize(self, data):
         return self.tokenizer(data["Description"], padding='max_length', truncation=True, max_length=32)
-
 
     def get_df(self):
         return self.df

@@ -13,9 +13,9 @@ class Trainer:
         # Number of training steps
         self.num_training_steps = 0
         self.optimizer = AdamW(params=self.model.parameters(), lr=5e-6)  # check if the optimizer ok like this
-        self.iteration = 0
+        self.al_iteration = 0
 
-    def train(self, train_dataloader: DataLoader, epochs=1):
+    def train(self, train_dataloader: DataLoader, al_iteration, epochs=1):
         # need criterion?
         wandb.watch(self.model, log='all', log_freq=10)
         training_steps = epochs * len(train_dataloader)  # steps would be 64 but 8 Batches a 4 a 2 epochs
@@ -32,7 +32,7 @@ class Trainer:
 
         # Set the progress bar
         progress_bar = tqdm(range(training_steps))  # had a problem with the progress bar before... or not?
-        batch_counter = 1
+        step = 0
         # Tells the model that we are training the model
         self.model.train()
         # Loop through the epochs
@@ -55,20 +55,13 @@ class Trainer:
                 self.optimizer.zero_grad()
                 # Update the progress bar
                 progress_bar.update(1)
-
-                if batch_counter % 4 == 0:
-                    # Care counter from 1
-                    self.log_training(loss, epoch, batch_counter)
-                batch_counter += 1
-        self.iteration += 1
+                self.log_training(al_iteration, loss, epoch, step)
+                step += 1
 
         return self.model
 
-    def log_training(self, loss, epoch, batch_count):
-        # TODO do I count steps correctly??
-        # TODO amount of iteration is not being logger yet play around with it!
-        # Can log The text instances here, but tokenized
-
-        wandb.log({"epoch": epoch, "loss": loss}, step=batch_count*4)
-        print(f"Training Iteration: {self.iteration}, Epoch: {epoch},"
-              f" Loss {loss:.3f} after total steps {str(batch_count*4).zfill(7)}")
+    @staticmethod
+    def log_training(al_iteration, loss, epoch, step):
+        wandb.log({"AL Iteration": al_iteration, "loss": loss})  # Deleted epoch for now
+        print(f"AL Iteration: {al_iteration}, Epoch: {epoch},"
+              f" Loss {loss:.3f} after total batches {str(step).zfill(7)}")

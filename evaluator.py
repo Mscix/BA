@@ -66,6 +66,7 @@ class Evaluator:
             **self.precision.compute(average='macro', zero_division=0),
             **self.f1.compute(average='macro')
         }
+        print(metrics_results['accuracy'])
         wandb.log(metrics_results)
 
         # TODO: save and export model
