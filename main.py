@@ -98,6 +98,7 @@ class Main:
             init_sample_size = hyperparameters['Init Sample Size']
             sample_size = hyperparameters['N-Sample']
             al_iterations = hyperparameters['AL Iterations']
+            print('AL Iteration: 0')
 
             eval_dataloader = transform_data(self.data.eval_data, self.device.type)
             init_sample, self.data.partial = self.sampler.sample(self.data.partial, init_sample_size)
@@ -119,6 +120,7 @@ class Main:
             loss.append(wandb.run.summary['loss'])
 
             for i in range(al_iterations):
+                print(f'AL Iteration: {i}')
                 sample, self.data.partial = self.sampler.sample(data=self.data.partial,
                                                                 sample_size=sample_size[i],
                                                                 sampling_method=self.sampling_method,

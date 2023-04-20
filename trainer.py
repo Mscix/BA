@@ -37,6 +37,7 @@ class Trainer:
         self.model.train()
         # Loop through the epochs
         for epoch in range(epochs):
+            print(f'Epoch {epoch}')
             # Loop through the batches
             for batch in train_dataloader:
                 # Get the batch
@@ -62,6 +63,6 @@ class Trainer:
 
     @staticmethod
     def log_training(al_iteration, loss, epoch, step):
-        wandb.log({"AL Iteration": al_iteration, "loss": loss})  # Deleted epoch for now
+        wandb.log({"AL Iteration": al_iteration, "epoch": epoch, "loss": loss})  # Deleted epoch for now
         # print(f"AL Iteration: {al_iteration}, Epoch: {epoch},"
         #      f" Loss {loss:.3f} after total batches {str(step).zfill(7)}")
