@@ -29,12 +29,10 @@ def transform_data(df, device):
 
     if device == 'cuda':
         for batch_id, sample in enumerate(dataset_train):
-            print(sample.keys())
-
-            data, target = sample['labels'].cuda(), sample['target'].cuda()
-            # data = data.to('cuda')
-            # target = target.to('cuda')
-
+            labels = sample['labels'].cuda()
+            input_ids = sample['input_ids'].cuda()
+            token_type_ids = sample['token_type_ids'].cuda()
+            attention_mask = sample['attention_mask'].cuda()
     return dataset_train
 
 
