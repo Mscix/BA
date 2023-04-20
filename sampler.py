@@ -42,13 +42,13 @@ class Sampler:
             with torch.no_grad():
                 # Compute the model output
                 output = model(**batch)
-                print(output)
+                # print(output)
             probabilities = output.logits
             probabilities = probabilities.softmax(dim=1)
             # probabilities = probabilities.apply(self.row_entropy, dim=1)
             probabilities = self.row_entropy(probabilities)
             predictions.append(probabilities)
-        print(predictions)
+        # print(predictions)
         # Zip the tensor values and indices together
         zipped = zip(data.index.tolist(), predictions)
         # sort by tensor value

@@ -3,7 +3,7 @@ from torch.optim import AdamW
 from transformers import get_scheduler
 from torch.utils.data import DataLoader
 # Progress bar
-from tqdm.auto import tqdm
+# from tqdm.auto import tqdm
 
 
 class Trainer:
@@ -31,7 +31,7 @@ class Trainer:
                                        num_training_steps=training_steps)
 
         # Set the progress bar
-        progress_bar = tqdm(range(training_steps))  # had a problem with the progress bar before... or not?
+        # progress_bar = tqdm(range(training_steps))  # had a problem with the progress bar before... or not?
         step = 0
         # Tells the model that we are training the model
         self.model.train()
@@ -54,7 +54,7 @@ class Trainer:
                 # Clear the gradients
                 self.optimizer.zero_grad()
                 # Update the progress bar
-                progress_bar.update(1)
+                # progress_bar.update(1)
                 self.log_training(al_iteration, loss, epoch, step)
                 step += 1
 
@@ -63,5 +63,5 @@ class Trainer:
     @staticmethod
     def log_training(al_iteration, loss, epoch, step):
         wandb.log({"AL Iteration": al_iteration, "loss": loss})  # Deleted epoch for now
-        print(f"AL Iteration: {al_iteration}, Epoch: {epoch},"
-              f" Loss {loss:.3f} after total batches {str(step).zfill(7)}")
+        # print(f"AL Iteration: {al_iteration}, Epoch: {epoch},"
+        #      f" Loss {loss:.3f} after total batches {str(step).zfill(7)}")

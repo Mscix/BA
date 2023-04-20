@@ -40,10 +40,8 @@ class Main:
         # Load model
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=4)
         if torch.cuda.is_available():
-            print('CUDA')
             device = torch.device("cuda")
         else:
-            print('CPU')
             device = torch.device("cpu")
 
         self.model.to(device)
@@ -164,6 +162,8 @@ if __name__ == "__main__":
     parser.add_argument('--ns', '--n_sample_size', type=float, default=0.1,
                         help='Sample size in the subsequents AL iterations.')
 
+    parser.add_argument('--ait', '--al_iterations', type=int, default=3, help='Number of AL iterations.')
+
     args = parser.parse_args()
 
     data_path = args.path
@@ -172,7 +172,13 @@ if __name__ == "__main__":
     _epochs = args.e
     _init_sample_size = args.iss
     _n_sample_size = args.ns
+    _al_iterations = args.ait
 
-    m = Main(data_path, pipeline_mode, _sampling_method, epochs=_epochs, n_sample_size=_n_sample_size,
+    m = Main(data_path,
+             pipeline_mode,
+             _sampling_method,
+             epochs=_epochs,
+             al_iterations=_al_iterations,
+             n_sample_size=_n_sample_size,
              init_sample_size=_init_sample_size)
     m.run()
