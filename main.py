@@ -32,6 +32,8 @@ class Main:
         else:
             print('CPU is used')
             self.device = torch.device('cpu')
+        # Empty cache
+        torch.cuda.empty_cache()
         self.data = Preprocessor(path, self.device.type)
 
         self.mode = mode
@@ -52,8 +54,6 @@ class Main:
         self.sampler = Sampler(self.device)
         self.sampling_method = sampling_method
         self.mode = mode
-        # Empty cache
-        torch.cuda.empty_cache()
 
         self.hyperparameters = {
             'Mode': mode,

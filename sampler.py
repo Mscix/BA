@@ -19,8 +19,7 @@ class Sampler:
         return result
 
     def least_confidence_sampling(self, data, sample_size, model):
-        # TODO: check that the DataLoader does not shuffle
-        # if smaple_size is a float converts it to an absolute n
+        # if sample_size is a float converts it to an absolute n
         if isinstance(sample_size, float):
             sample_size = math.floor(len(data) * sample_size)
 
@@ -42,19 +41,13 @@ class Sampler:
             with torch.no_grad():
                 # Compute the model output
                 output = model(**batch)
-                # print(output)
             probabilities = output.logits
             probabilities = probabilities.softmax(dim=1)
-            # probabilities = probabilities.apply(self.row_entropy, dim=1)
             probabilities = self.row_entropy(probabilities)
             predictions.append(probabilities)
-        # print(predictions)
-        # Zip the tensor values and indices together
         zipped = zip(data.index.tolist(), predictions)
-        # sort by tensor value
-        # The result: [(index: 5, entropy: 2), (index: 0, entropy: 1.9), ...]
         result = sorted(zipped, key=lambda x: x[1])
-        indices_to_label = [x[0] for x in result[:sample_size]]
+        indices_to_label = [x[0] for x in result[-sample_size:]]
         to_label = data[data.index.isin(indices_to_label)]
         remaining = data.drop(indices_to_label)
         model.train()

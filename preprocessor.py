@@ -24,15 +24,20 @@ def transform_data(df, device):
     dataset_train = dataset_train.rename_column("Class Index", "labels")
     # Reformat to PyTorch tensors
     dataset_train.set_format('torch')
+    # TODO what is the default batch size? its 1
     # Returns <class 'datasets.arrow_dataset.Dataset'>
-    dataset_train = DataLoader(dataset=dataset_train)
-
+    if device == 'cuda':
+        batch_size = 1024
+    else:
+        batch_size = 4
+    dataset_train = DataLoader(dataset=dataset_train, batch_size=batch_size)
+    # TODO check if this does anything, is in place?
     if device == 'cuda':
         for batch_id, sample in enumerate(dataset_train):
-            labels = sample['labels'].cuda()
-            input_ids = sample['input_ids'].cuda()
-            token_type_ids = sample['token_type_ids'].cuda()
-            attention_mask = sample['attention_mask'].cuda()
+            labels = sample['labels'].to('cuda')
+            input_ids = sample['input_ids'].to('cuda')
+            token_type_ids = sample['token_type_ids'].to('cuda')
+            attention_mask = sample['attention_mask'].to('cuda')
     return dataset_train
 
 
