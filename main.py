@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from trainer import Trainer
-from preprocessor import Preprocessor, transform_data
+from preprocessor import Preprocessor, transform_data, to_data_loader
 from evaluator import Evaluator
 from transformers import AutoModelForSequenceClassification
 import torch
@@ -85,11 +85,13 @@ class Main:
         # Just for understanding, could have just pasted unlabelled for now
         self.data.labelled = self.strong_labeler.label(self.data.partial)
 
-        train_dataloader = transform_data(self.data.labelled, self.device.type)
+        # train_dataloader = transform_data(self.data.labelled, self.device.type)
+        train_dataloader = to_data_loader(self.data.labelled, self.device.type)
 
         trained_model = self.trainer.train(train_dataloader, 0)
 
-        eval_dataloader = transform_data(self.data.eval_data, self.device.type)
+        # eval_dataloader = transform_data(self.data.eval_data, self.device.type)
+        eval_dataloader = to_data_loader(self.data.eval_data, self.device.type)
         self.evaluator.eval(trained_model, eval_dataloader)
 
     def al(self, hyperparameters):
@@ -100,7 +102,9 @@ class Main:
             al_iterations = hyperparameters['AL Iterations']
             print('AL Iteration: 0')
 
-            eval_dataloader = transform_data(self.data.eval_data, self.device.type)
+            # eval_dataloader = transform_data(self.data.eval_data, self.device.type)
+            eval_dataloader = to_data_loader(self.data.eval_data, self.device.type)
+
             init_sample, self.data.partial = self.sampler.sample(self.data.partial, init_sample_size)
             self.data.labelled = self.strong_labeler.label(init_sample)
 
@@ -113,7 +117,8 @@ class Main:
                 train_set = self.data.labelled
             # --------------- AL PLUS --------------- #
 
-            train_dataloader = transform_data(train_set, self.device.type)
+            # train_dataloader = transform_data(train_set, self.device.type)
+            train_dataloader = to_data_loader(self.data.labelled, self.device.type)
             self.trainer.train(train_dataloader, 0)
             self.evaluator.eval(self.trainer.model, eval_dataloader)
 
@@ -133,7 +138,9 @@ class Main:
                     self.data.labelled
                 # --------------- AL PLUS --------------- #
 
-                train_dataloader = transform_data(train_set, self.device.type)
+                # train_dataloader = transform_data(train_set, self.device.type)
+                train_dataloader = to_data_loader(self.data.labelled, self.device.type)
+
                 self.trainer.train(train_dataloader, i+1)
                 self.evaluator.eval(self.trainer.model, eval_dataloader)
                 loss.append(wandb.run.summary['loss'])
@@ -149,7 +156,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process passed Hyperparameters.')
 
     parser.add_argument('-p', '--path', type=str, help='Path to the csv file with the data set.',
-                        default='/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/small_e.csv')
+                        default='/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/small_t.csv')
 
     parser.add_argument('-m', '--mode', type=str, choices=['AL', 'AL+', 'Standard'], default='AL+',
                         help='The Learning mode.')

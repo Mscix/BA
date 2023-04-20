@@ -5,6 +5,7 @@ from transformers import AutoTokenizer
 # Hugging Face Dataset
 from datasets import Dataset
 from torch.utils.data import DataLoader
+from ast import literal_eval
 
 
 def tokenize(data):
@@ -41,6 +42,31 @@ def transform_data(df, device):
     return dataset_train
 
 
+def to_data_loader(df, device):
+    data = Dataset.from_pandas(df)
+
+    data = data.remove_columns(['Embedding', 'Index'])
+
+    # Change name Class Index -> labels because the model expects name labels
+    data = data.rename_column("Class Index", "labels")
+
+    # Reformat to PyTorch tensors
+    data.set_format('torch')
+    if device == 'cuda':
+        batch_size = 256
+    else:
+        batch_size = 4
+    data = DataLoader(dataset=data, batch_size=batch_size)
+    # TODO check if this does anything, is in place?
+    if device == 'cuda':
+        for batch_id, sample in enumerate(data):
+            labels = sample['labels'].to('cuda')
+            input_ids = sample['input_ids'].to('cuda')
+            token_type_ids = sample['token_type_ids'].to('cuda')
+            attention_mask = sample['attention_mask'].to('cuda')
+    return data
+
+
 def get_first_reps_4_class(df, keep=True):
     # TODO: the Problem I discussed with Fabian can happen here lol add Exception handler or something
     # maybe for now set manually ...
@@ -69,7 +95,8 @@ def get_embeddings_from_df(df):
 
 
 def get_embedding(df, index):
-    return np.array(eval(df.iloc[index]['Embedding']), np.float64)  # TODO CARE EVAL
+    # return np.array(eval(df.iloc[index]['Embedding']), np.float64) # TODO CARE EVAL
+    return np.array(literal_eval(df.iloc[index]['Embedding']), np.float64)
 
 
 class Preprocessor:
@@ -81,6 +108,9 @@ class Preprocessor:
 
         # df = df[['Class Index', 'Description']]  # only these two columns
         df['Class Index'] = df['Class Index'] - 1  # Cross Class entropy expects [0,3] instead of [1,4]
+        df['input_ids'] = df['input_ids'].apply(literal_eval)
+        df['attention_mask'] = df['attention_mask'].apply(literal_eval)
+        df['token_type_ids'] = df['token_type_ids'].apply(literal_eval)
         self.control = df
         self.df = df
         # Split Training set 80%, Test set 10%, Validation set 10% (Only Two split)

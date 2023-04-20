@@ -62,6 +62,8 @@ class Sampler:
     def diversity_sampling(self, data, sample_size):
         pass
 
+
+    # TODO work on Dataset and not pandas anymore...
     @staticmethod
     def random_sampling(data, sample_size):
         # In case absolute sample size is the input
@@ -69,5 +71,6 @@ class Sampler:
             sample_size = sample_size / len(data)
         sampled = data.sample(frac=sample_size, random_state=42)
         remaining = data.drop(sampled.index)
+        # sampled, remaining = data.train_test_split(test_size=sample_size, seed=42)
         return sampled, remaining
 
