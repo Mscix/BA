@@ -27,7 +27,7 @@ def transform_data(df, device):
     # TODO what is the default batch size? its 1
     # Returns <class 'datasets.arrow_dataset.Dataset'>
     if device == 'cuda':
-        batch_size = 1024
+        batch_size = 256
     else:
         batch_size = 4
     dataset_train = DataLoader(dataset=dataset_train, batch_size=batch_size)

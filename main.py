@@ -120,7 +120,7 @@ class Main:
             loss.append(wandb.run.summary['loss'])
 
             for i in range(al_iterations):
-                print(f'AL Iteration: {i}')
+                print(f'AL Iteration: {i+1}')
                 sample, self.data.partial = self.sampler.sample(data=self.data.partial,
                                                                 sample_size=sample_size[i],
                                                                 sampling_method=self.sampling_method,
