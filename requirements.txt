@@ -8,3 +8,4 @@ datasets
 numpy
 evaluate
 sklearn
+ast
