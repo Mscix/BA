@@ -12,13 +12,14 @@ class Sampler:
         # result: (remaining, sampled)
         if sampling_method == 'Random':
             result = self.random_sampling(data, sample_size)
-        elif sampling_method == 'LC':
-            result = self.least_confidence_sampling(data, sample_size, model)
+        elif sampling_method == 'EC':
+            result = self.entropy_confidence_sampling(data, sample_size, model)
         else:
             raise Exception('TODO: implement')
         return result
 
-    def least_confidence_sampling(self, data, sample_size, model):
+    # TODO Rename to Entropy...
+    def entropy_confidence_sampling(self, data, sample_size, model):
         # if sample_size is a float converts it to an absolute n
         if isinstance(sample_size, float):
             sample_size = math.floor(len(data) * sample_size)
