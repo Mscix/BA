@@ -26,10 +26,13 @@ def transform_data(df, device):
     dataset_train.set_format('torch')
     # Returns <class 'datasets.arrow_dataset.Dataset'>
     dataset_train = DataLoader(dataset=dataset_train)
+
     if device == 'cuda':
-        for data, target in dataset_train:
-            data = data.to('cuda')
-            target = target.to('cuda')
+        for batch_id, sample in enumerate(dataset_train):
+
+            data, target = sample['labels'].cuda(), sample['target'].cuda()
+            # data = data.to('cuda')
+            # target = target.to('cuda')
 
     return dataset_train
 
