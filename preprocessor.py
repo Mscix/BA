@@ -29,6 +29,7 @@ def transform_data(df, device):
 
     if device == 'cuda':
         for batch_id, sample in enumerate(dataset_train):
+            print(sample.keys())
 
             data, target = sample['labels'].cuda(), sample['target'].cuda()
             # data = data.to('cuda')
@@ -90,29 +91,6 @@ class Preprocessor:
         # This is how the data is split later on
         self.labelled = None
         self.partial = self.train_data
-
-    def transform_data(self, df):
-        # This method transforms df so that Dataloader can take as input
-        # Transform pandas frame into Huggingface Dataset
-        hg_train_data = Dataset.from_pandas(df)
-        dataset_train = hg_train_data.map(self.tokenize)
-        # Remove unused columns from Data set
-        dataset_train = dataset_train.remove_columns(['Description', 'Embedding', 'Index', 'Title'])
-        # Change name Class Index -> labels because the model expects name labels
-        dataset_train = dataset_train.rename_column("Class Index", "labels")
-        # Reformat to PyTorch tensors
-        dataset_train.set_format('torch')
-        # Returns <class 'datasets.arrow_dataset.Dataset'>
-        dataset_train = DataLoader(dataset=dataset_train)
-        if self.device == 'cuda':
-            for data, target in dataset_train:
-                data = data.to('cuda')
-                target = target.to('cuda')
-
-        return dataset_train
-
-    def tokenize(self, data):
-        return self.tokenizer(data["Description"], padding='max_length', truncation=True, max_length=32)
 
     def get_df(self):
         return self.df
