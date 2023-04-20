@@ -12,7 +12,7 @@ def tokenize(data):
     return tokenizer(data["Description"], padding='max_length', truncation=True, max_length=32)
 
 
-def transform_data(df):
+def transform_data(df, device):
     # This method transforms df so that Dataloader can take as input
 
     # Transform pandas frame into Huggingface Dataset
@@ -26,6 +26,11 @@ def transform_data(df):
     dataset_train.set_format('torch')
     # Returns <class 'datasets.arrow_dataset.Dataset'>
     dataset_train = DataLoader(dataset=dataset_train)
+    if device == 'cuda':
+        for data, target in dataset_train:
+            data = data.to('cuda')
+            target = target.to('cuda')
+
     return dataset_train
 
 

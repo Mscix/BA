@@ -31,7 +31,7 @@ class Sampler:
         # this should return the softmax for them
         # For each instance the model returns a vector of probabilities that it belongs to each class
         # Calculate entropy for each vector pick the one where the entropy highest
-        input_data = transform_data(data)
+        input_data = transform_data(data, self.device.type)
         model.eval()
         predictions = []
 

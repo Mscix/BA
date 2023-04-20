@@ -23,10 +23,18 @@ class Main:
                  init_sample_size=0.2,
                  n_sample_size=0.1):
 
-        self.data = Preprocessor(path)
-        self.mode = mode
-
+        # Load model
         model_name = "bert-base-cased"
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=4)
+        if torch.cuda.is_available():
+            print('CUDA is used.')
+            self.device = torch.device('cuda')
+        else:
+            print('CPU is used')
+            self.device = torch.device('cpu')
+        self.data = Preprocessor(path, self.device.type)
+
+        self.mode = mode
         weak_labeler = 'K-Means'
 
         self.fixed_centroids = True
@@ -37,19 +45,11 @@ class Main:
             # Set data Labels to ambiguous number but only if fixed_centroids = false
 
         self.strong_labeler = StrongLabeller(self.data.control)
-        # Load model
-        self.model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=4)
-        if torch.cuda.is_available():
-            print('CUDA is used.')
-            device = torch.device("cuda")
-        else:
-            print('CPU is used')
-            device = torch.device("cpu")
 
-        self.model.to(device)
-        self.trainer = Trainer(self.model, device)
-        self.evaluator = Evaluator(device)
-        self.sampler = Sampler(device)
+        self.model.to(self.device)
+        self.trainer = Trainer(self.model, self.device)
+        self.evaluator = Evaluator(self.device)
+        self.sampler = Sampler(self.device)
         self.sampling_method = sampling_method
         self.mode = mode
         # Empty cache
@@ -85,11 +85,11 @@ class Main:
         # Just for understanding, could have just pasted unlabelled for now
         self.data.labelled = self.strong_labeler.label(self.data.partial)
 
-        train_dataloader = transform_data(self.data.labelled)
+        train_dataloader = transform_data(self.data.labelled, self.device.type)
 
         trained_model = self.trainer.train(train_dataloader, 0)
 
-        eval_dataloader = transform_data(self.data.eval_data)
+        eval_dataloader = transform_data(self.data.eval_data, self.device.type)
         self.evaluator.eval(trained_model, eval_dataloader)
 
     def al(self, hyperparameters):
@@ -99,7 +99,7 @@ class Main:
             sample_size = hyperparameters['N-Sample']
             al_iterations = hyperparameters['AL Iterations']
 
-            eval_dataloader = transform_data(self.data.eval_data)
+            eval_dataloader = transform_data(self.data.eval_data, self.device.type)
             init_sample, self.data.partial = self.sampler.sample(self.data.partial, init_sample_size)
             self.data.labelled = self.strong_labeler.label(init_sample)
 
@@ -112,7 +112,7 @@ class Main:
                 train_set = self.data.labelled
             # --------------- AL PLUS --------------- #
 
-            train_dataloader = transform_data(train_set)
+            train_dataloader = transform_data(train_set, self.device.type)
             self.trainer.train(train_dataloader, 0)
             self.evaluator.eval(self.trainer.model, eval_dataloader)
 
@@ -131,7 +131,7 @@ class Main:
                     self.data.labelled
                 # --------------- AL PLUS --------------- #
 
-                train_dataloader = transform_data(train_set)
+                train_dataloader = transform_data(train_set, self.device.type)
                 self.trainer.train(train_dataloader, i+1)
                 self.evaluator.eval(self.trainer.model, eval_dataloader)
                 loss.append(wandb.run.summary['loss'])
