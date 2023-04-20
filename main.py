@@ -40,8 +40,10 @@ class Main:
         # Load model
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=4)
         if torch.cuda.is_available():
+            print('CUDA is used.')
             device = torch.device("cuda")
         else:
+            print('CPU is used')
             device = torch.device("cpu")
 
         self.model.to(device)

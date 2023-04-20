@@ -61,9 +61,10 @@ def get_embedding(df, index):
 
 
 class Preprocessor:
-    def __init__(self, path: str):  # pass mode?
+    def __init__(self, path: str, device):  # pass mode?
         # Don't forget, that still have the test.csv
         # set the index_col as Index, which is the custom index in relation to the whole set
+        self.device = device
         df = pd.read_csv(path, index_col='Index')
 
         # df = df[['Class Index', 'Description']]  # only these two columns
@@ -95,6 +96,11 @@ class Preprocessor:
         dataset_train.set_format('torch')
         # Returns <class 'datasets.arrow_dataset.Dataset'>
         dataset_train = DataLoader(dataset=dataset_train)
+        if self.device == 'cuda':
+            for data, target in dataset_train:
+                data = data.to('cuda')
+                target = target.to('cuda')
+
         return dataset_train
 
     def tokenize(self, data):
