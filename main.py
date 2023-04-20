@@ -152,29 +152,29 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--mode', type=str, choices=['AL', 'AL+', 'Standard'], default='AL+',
                         help='The Learning mode.')
 
-    parser.add_argument('--sm', '--sampling_method', type=str, choices=['Random', 'LC'], default='Random',
+    parser.add_argument('-sm', '--sampling_method', type=str, choices=['Random', 'LC'], default='Random',
                         help='Sampling method for active learning.')
 
-    parser.add_argument('--e', '--epochs', type=int, default=1,
+    parser.add_argument('-e', '--epochs', type=int, default=1,
                         help='How many epochs.')
 
-    parser.add_argument('--iss', '--init_sample_size', type=float, default=0.2,
+    parser.add_argument('-iss', '--init_sample_size', type=float, default=0.2,
                         help='Initial random sample size.')
 
-    parser.add_argument('--ns', '--n_sample_size', type=float, default=0.1,
+    parser.add_argument('-ns', '--n_sample_size', type=float, default=0.1,
                         help='Sample size in the subsequents AL iterations.')
 
-    parser.add_argument('--ait', '--al_iterations', type=int, default=3, help='Number of AL iterations.')
+    parser.add_argument('-ait', '--al_iterations', type=int, default=3, help='Number of AL iterations.')
 
     args = parser.parse_args()
 
     data_path = args.path
     pipeline_mode = args.mode
-    _sampling_method = args.sm
-    _epochs = args.e
-    _init_sample_size = args.iss
-    _n_sample_size = args.ns
-    _al_iterations = args.ait
+    _sampling_method = args.sampling_method
+    _epochs = args.epochs
+    _init_sample_size = args.init_sample_size
+    _n_sample_size = args.n_sample_size
+    _al_iterations = args.al_iterations
 
     m = Main(data_path,
              pipeline_mode,
