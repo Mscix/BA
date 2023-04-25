@@ -63,7 +63,7 @@ class Main:
             'Fixed Weak Labelling': True,
             'Data Set': 'AG_NEWS',
             'Train Set': len(self.data.train_data),
-            'Batch Size': 2 if self.device == 'CPU' else 'GPU',
+            'Batch Size': 2 if self.device.type == 'CPU' else 256,
             'Epochs': epochs,
             'AL Iterations': al_iterations,
             'Sampling Method': sampling_method,
