@@ -37,7 +37,7 @@ class Trainer:
         self.model.train()
         # Loop through the epochs
         for epoch in range(epochs):
-            print(f'Epoch {epoch}')
+            # print(f'Epoch {epoch}')
             # Loop through the batches
             for batch in train_dataloader:
                 # Get the batch
