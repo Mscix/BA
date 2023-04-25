@@ -160,8 +160,8 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--mode', type=str, choices=['AL', 'AL+', 'Standard'], default='AL+',
                         help='The Learning mode.')
 
-    parser.add_argument('-sm', '--sampling_method', type=str, choices=['Random', 'EC'], default='Random',
-                        help='Sampling method for active learning.')
+    parser.add_argument('-sm', '--sampling_method', type=str, choices=['Random', 'EC', 'LC', 'MC', 'RC'],
+                        default='Random', help='Sampling method for active learning.')
 
     parser.add_argument('-e', '--epochs', type=int, default=1,
                         help='How many epochs.')

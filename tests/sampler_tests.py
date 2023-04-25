@@ -1,6 +1,10 @@
 import pytest
 import unittest
 import sampler
+import pandas as pd
+
 
 def ec_test():
-    s = sampler.Sampler.entropy_confidence_sampling
+    s = sampler.Sampler.sample_by_value
+    df = pd.DataFrame({})
+
