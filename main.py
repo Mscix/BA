@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from trainer import Trainer
-from preprocessor import Preprocessor, transform_data, to_data_loader
+from preprocessor import Preprocessor, to_data_loader
 from evaluator import Evaluator
 from transformers import AutoModelForSequenceClassification
 import torch
@@ -117,7 +117,7 @@ class Main:
             # --------------- AL PLUS --------------- #
 
             # train_dataloader = transform_data(train_set, self.device.type)
-            train_dataloader = to_data_loader(self.data.labelled, self.device.type)
+            train_dataloader = to_data_loader(train_set, self.device.type)
             self.trainer.train(train_dataloader, 0)
             self.evaluator.eval(self.trainer.model, eval_dataloader)
 
@@ -138,7 +138,7 @@ class Main:
                 # --------------- AL PLUS --------------- #
 
                 # train_dataloader = transform_data(train_set, self.device.type)
-                train_dataloader = to_data_loader(self.data.labelled, self.device.type)
+                train_dataloader = to_data_loader(train_set, self.device.type)
 
                 self.trainer.train(train_dataloader, i+1)
                 self.evaluator.eval(self.trainer.model, eval_dataloader)

@@ -8,40 +8,6 @@ from torch.utils.data import DataLoader
 from ast import literal_eval
 
 
-def tokenize(data):
-    tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
-    return tokenizer(data["Description"], padding='max_length', truncation=True, max_length=32)
-
-
-def transform_data(df, device):
-    # This method transforms df so that Dataloader can take as input
-
-    # Transform pandas frame into Huggingface Dataset
-    hg_train_data = Dataset.from_pandas(df)
-    dataset_train = hg_train_data.map(tokenize)
-    # Remove unused columns from Data set
-    dataset_train = dataset_train.remove_columns(['Description', 'Embedding', 'Index', 'Title'])
-    # Change name Class Index -> labels because the model expects name labels
-    dataset_train = dataset_train.rename_column("Class Index", "labels")
-    # Reformat to PyTorch tensors
-    dataset_train.set_format('torch')
-    # TODO what is the default batch size? its 1
-    # Returns <class 'datasets.arrow_dataset.Dataset'>
-    if device == 'cuda':
-        batch_size = 256
-    else:
-        batch_size = 4
-    dataset_train = DataLoader(dataset=dataset_train, batch_size=batch_size)
-    # TODO check if this does anything, is in place?
-    if device == 'cuda':
-        for batch_id, sample in enumerate(dataset_train):
-            labels = sample['labels'].to('cuda')
-            input_ids = sample['input_ids'].to('cuda')
-            token_type_ids = sample['token_type_ids'].to('cuda')
-            attention_mask = sample['attention_mask'].to('cuda')
-    return dataset_train
-
-
 def to_data_loader(df, device):
     data = Dataset.from_pandas(df)
 
@@ -127,4 +93,3 @@ class Preprocessor:
 
     def get_df(self):
         return self.df
-
