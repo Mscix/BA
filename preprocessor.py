@@ -55,7 +55,7 @@ def to_data_loader(df, device):
     if device == 'cuda':
         batch_size = 256
     else:
-        batch_size = 4
+        batch_size = 2
     data = DataLoader(dataset=data, batch_size=batch_size)
     # TODO check if this does anything, is in place?
     if device == 'cuda':

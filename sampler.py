@@ -46,6 +46,7 @@ class Sampler:
             probabilities = probabilities.softmax(dim=1)
             probabilities = self.row_entropy(probabilities)
             predictions.append(probabilities)
+
         zipped = zip(data.index.tolist(), predictions)
         result = sorted(zipped, key=lambda x: x[1])
         indices_to_label = [x[0] for x in result[-sample_size:]]
