@@ -12,6 +12,8 @@ class Sampler:
         # result: (remaining, sampled)
         if sampling_method == 'Random':
             result = self.random_sampling(data, sample_size)
+
+        # For Uncertainty sampling: the splicing happens from the back care
         elif sampling_method == 'EC':
             # Get the ones with the highest entropy => ascending
             result = self.uncertainty_sampling(data, sample_size, model, self.entropy, reverse=False)
