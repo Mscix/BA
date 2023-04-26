@@ -9,7 +9,7 @@ from labeler import KMeansLabeller, StrongLabeller
 from sampler import Sampler
 import pandas as pd
 import wandb
-import plotter as p
+# import plotter as p
 import argparse
 
 
@@ -94,7 +94,7 @@ class Main:
 
     # make absolute number of samples and approximate
     def al(self, hyperparameters):
-        loss = []
+        # loss = []
         with wandb.init(project='active-learning-plus', config=hyperparameters):
             init_sample_size = hyperparameters['Init Sample Size']
             sample_size = hyperparameters['N-Sample']
@@ -121,7 +121,7 @@ class Main:
             self.trainer.train(train_dataloader, 0)
             self.evaluator.eval(self.trainer.model, eval_dataloader)
 
-            loss.append(wandb.run.summary['loss'])
+            # loss.append(wandb.run.summary['loss'])
 
             for i in range(al_iterations):
                 print(f'AL Iteration: {i+1}')
@@ -142,10 +142,10 @@ class Main:
 
                 self.trainer.train(train_dataloader, i+1)
                 self.evaluator.eval(self.trainer.model, eval_dataloader)
-                loss.append(wandb.run.summary['loss'])
+                # loss.append(wandb.run.summary['loss'])
 
-            p.standard_chart(y=loss, x_label='AL iteration', y_label='Loss',
-                             title='Loss - Training cycles')
+            #p.standard_chart(y=loss, x_label='AL iteration', y_label='Loss',
+            #                 title='Loss - Training cycles')
 
     def proto(self, hyperparameters):
         pass
