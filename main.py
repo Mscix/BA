@@ -92,6 +92,7 @@ class Main:
         eval_dataloader = to_data_loader(self.data.eval_data, self.device.type)
         self.evaluator.eval(trained_model, eval_dataloader)
 
+    # make absolute number of samples and approximate
     def al(self, hyperparameters):
         loss = []
         with wandb.init(project='active-learning-plus', config=hyperparameters):

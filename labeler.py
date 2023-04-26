@@ -13,7 +13,7 @@ class WeaklyLabeller:
             if w_input[i] != w_output[i]:
                 non_matching_count += 1
 
-        return f"{list_len} / {non_matching_count}"
+        return f"{non_matching_count} / {list_len}"
 
 
 class KMeansLabeller(WeaklyLabeller):
