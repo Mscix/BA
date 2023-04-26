@@ -1,8 +1,19 @@
 from sklearn.cluster import KMeans
 from preprocessor import Preprocessor, get_first_reps_4_class, get_embeddings_from_df
+import wandb
+
+class WeaklyLabeller:
+
+    @staticmethod
+    def calc_error(w_input, w_output):
+        non_matching_count = 0
+        for i in range(len(w_input)):
+            if w_input[i] != w_output[i]:
+                non_matching_count += 1
+        return non_matching_count
 
 
-class KMeansLabeller:
+class KMeansLabeller(WeaklyLabeller):
     def __init__(self, data: Preprocessor, fixed_centroids=False, num_clusters=4, dims=1536):
         self.num_clusters = num_clusters
         self.dims = dims
@@ -20,9 +31,14 @@ class KMeansLabeller:
         return y_predicted
 
     def label(self, to_label):
-        # TODO: Check that I can just assign this way and do not have to check for Index
         embeddings = get_embeddings_from_df(to_label)
+        w_input = to_label['Class Index'].tolist()
+
+        # Here is the actual labelling
         to_label['Class Index'] = self.get_fit_predict(embeddings)
+
+        w_output = to_label['Class Index'].tolist()
+        wandb.log({'Weakly labeller error': self.calc_error(w_input, w_output)})
         return to_label
 
     def reset_kmeans(self, num_clusters, random_state, init_centroids):
