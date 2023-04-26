@@ -144,7 +144,7 @@ class Main:
                 self.evaluator.eval(self.trainer.model, eval_dataloader)
                 # loss.append(wandb.run.summary['loss'])
 
-            #p.standard_chart(y=loss, x_label='AL iteration', y_label='Loss',
+            # p.standard_chart(y=loss, x_label='AL iteration', y_label='Loss',
             #                 title='Loss - Training cycles')
 
     def proto(self, hyperparameters):
