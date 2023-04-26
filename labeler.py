@@ -2,15 +2,18 @@ from sklearn.cluster import KMeans
 from preprocessor import Preprocessor, get_first_reps_4_class, get_embeddings_from_df
 import wandb
 
+
 class WeaklyLabeller:
 
     @staticmethod
     def calc_error(w_input, w_output):
         non_matching_count = 0
-        for i in range(len(w_input)):
+        list_len = len(w_input)
+        for i in range(list_len):
             if w_input[i] != w_output[i]:
                 non_matching_count += 1
-        return non_matching_count
+
+        return f"{list_len} / {non_matching_count}"
 
 
 class KMeansLabeller(WeaklyLabeller):
