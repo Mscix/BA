@@ -1,7 +1,7 @@
 from sklearn.cluster import KMeans
 from preprocessor import Preprocessor, get_first_reps_4_class, get_embeddings_from_df
 import wandb
-
+import random
 
 class WeaklyLabeller:
 
@@ -46,6 +46,27 @@ class KMeansLabeller(WeaklyLabeller):
 
     def reset_kmeans(self, num_clusters, random_state, init_centroids):
         self.kmeans = KMeans(n_clusters=num_clusters, random_state=random_state, init=init_centroids)
+
+
+class CustomLabeller(WeaklyLabeller):
+    def __init__(self, error_rate, control_data):
+        self.error_rate = error_rate  # What type error_rate
+        self.control_data = control_data
+
+    def label(self, to_label):
+        # Only works properly if Weakly Labeller called just once, otherwise just do with control data
+        # Adjust that it is not dependent on the correct initial labels...
+        n = int(self.error_rate * len(to_label))
+        re_label = to_label.sample(n=n, replace=False)
+        false_labels = self.false_label(re_label)
+        to_label.update(false_labels)
+        print(self.calc_error(to_label['Class Index'].tolist(), self.control_data['Class Index'].tolist()))
+
+    @staticmethod
+    def false_label(to_label):
+        operation = lambda x: random.choice([i for i in range(4) if i != x])
+        to_label['Class Index'] = to_label.apply(lambda row: operation(row['Class Index']), axis=1)
+        return to_label
 
 
 class StrongLabeller:
