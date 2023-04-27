@@ -1,4 +1,5 @@
 import wandb
+import torch
 from torch.optim import AdamW
 from transformers import get_scheduler
 from torch.utils.data import DataLoader
@@ -58,7 +59,7 @@ class Trainer:
                 # progress_bar.update(1)
                 self.log_training(al_iteration, loss, epoch, step)
                 step += 1
-
+        torch.cuda.empty_cache()
         return self.model
 
     @staticmethod
