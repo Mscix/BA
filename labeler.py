@@ -2,6 +2,7 @@ from sklearn.cluster import KMeans
 from preprocessor import Preprocessor, get_first_reps_4_class, get_embeddings_from_df
 import wandb
 import random
+import pandas as pd
 
 class WeaklyLabeller:
 
@@ -59,8 +60,10 @@ class CustomLabeller(WeaklyLabeller):
         n = int(self.error_rate * len(to_label))
         re_label = to_label.sample(n=n, replace=False)
         false_labels = self.false_label(re_label)
-        to_label.update(false_labels)
+        to_label = pd.concat([to_label, false_labels])
+        print(to_label)
         print(self.calc_error(to_label['Class Index'].tolist(), self.control_data['Class Index'].tolist()))
+        return to_label
 
     @staticmethod
     def false_label(to_label):

@@ -195,10 +195,6 @@ class Main:
 
                 self.trainer.train(train_dataloader, i + 1)
                 self.evaluator.eval(self.trainer.model, eval_dataloader)
-                # loss.append(wandb.run.summary['loss'])
-
-            # p.standard_chart(y=loss, x_label='AL iteration', y_label='Loss',
-            #                 title='Loss - Training cycles')
 
 
 if __name__ == "__main__":
