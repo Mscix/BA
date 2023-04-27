@@ -19,7 +19,8 @@ def to_data_loader(df, device):
     # Reformat to PyTorch tensors
     data.set_format('torch')
     if device == 'cuda':
-        batch_size = 256
+        # batch_size = 256
+        batch_size = 128
     else:
         batch_size = 2
     data = DataLoader(dataset=data, batch_size=batch_size)
