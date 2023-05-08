@@ -71,6 +71,7 @@ class Trainer:
                 self.log_training(al_iteration, loss, epoch, self.step)
 
                 self.step += 1
+            print(f'Epoch {epoch}')
             epoch += 1
             if epoch > 30:
                 raise Exception('Epoch too High eats too much GPU epoch=30.')
