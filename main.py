@@ -18,6 +18,7 @@ class Main:
                  path,
                  mode,
                  sampling_method,
+                 weakly_error=0.25,
                  epochs=1,
                  al_iterations=3,
                  init_sample_size=0.2,
@@ -54,12 +55,15 @@ class Main:
         self.sampler = Sampler(self.device)
         self.sampling_method = sampling_method
         self.mode = mode
+        self.weakly_error = weakly_error
 
+        # pass the actual error rate also? because if insufficient data size
         self.hyperparameters = {
             'Mode': mode,
             # 'Classes': 4,
             # 'Model Name': model_name,
             'Weak Labeler': weak_labeler,
+            'Weakly Error': weakly_error,
             'Data Set': 'AG_NEWS',
             'Train Set': len(self.data.train_data),
             # 'Batch Size': 2 if self.device.type == 'CPU' else 256,
@@ -101,8 +105,10 @@ class Main:
             al_iterations = hyperparameters['AL Iterations']
             print('AL Iteration: 0')
 
-            # eval_dataloader = transform_data(self.data.eval_data, self.device.type)
+
             eval_dataloader = to_data_loader(self.data.eval_data, self.device.type)
+
+
 
             init_sample, self.data.partial = self.sampler.sample(self.data.partial, init_sample_size)
             self.data.labelled = self.strong_labeler.label(init_sample)
@@ -139,7 +145,7 @@ class Main:
 
                 # train_dataloader = transform_data(train_set, self.device.type)
                 train_dataloader = to_data_loader(train_set, self.device.type)
-
+                # TODO: here below early stopping nehmen
                 self.trainer.train(train_dataloader, i+1)
                 self.evaluator.eval(self.trainer.model, eval_dataloader)
                 # loss.append(wandb.run.summary['loss'])
@@ -162,7 +168,9 @@ class Main:
 
             # --------------- AL PLUS --------------- #
             if self.mode == 'Dev':
-                weak_labeler = CustomLabeller(410/3040, self.data.control)
+                # print(self.weakly_error)
+                weak_labeler = CustomLabeller(self.weakly_error, self.data.control)
+                print(len(self.data.partial))
                 self.data.partial = weak_labeler.label(self.data.partial)
                 train_set = pd.concat([self.data.labelled, self.data.partial])
             else:
@@ -209,7 +217,7 @@ if __name__ == "__main__":
     parser.add_argument('-sm', '--sampling_method', type=str, choices=['Random', 'EC', 'LC', 'MC', 'RC'],
                         default='Random', help='Sampling method for active learning.')
 
-    parser.add_argument('-e', '--epochs', type=int, default=1,
+    parser.add_argument('-ep', '--epochs', type=int, default=1,
                         help='How many epochs.')
 
     parser.add_argument('-iss', '--init_sample_size', type=float, default=0.2,
@@ -220,6 +228,9 @@ if __name__ == "__main__":
 
     parser.add_argument('-ait', '--al_iterations', type=int, default=3, help='Number of AL iterations.')
 
+    parser.add_argument('-err', '--weakly_error', type=float, default=0.25,
+                        help='The error rate of the custom WeaklyLabeller')
+
     args = parser.parse_args()
 
     data_path = args.path
@@ -229,10 +240,12 @@ if __name__ == "__main__":
     _init_sample_size = args.init_sample_size
     _n_sample_size = args.n_sample_size
     _al_iterations = args.al_iterations
+    _weakly_error = args.weakly_error
 
     m = Main(data_path,
              pipeline_mode,
              _sampling_method,
+             weakly_error=_weakly_error,
              epochs=_epochs,
              al_iterations=_al_iterations,
              n_sample_size=_n_sample_size,

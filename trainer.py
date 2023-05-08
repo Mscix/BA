@@ -15,7 +15,11 @@ class Trainer:
         self.num_training_steps = 0
         self.optimizer = AdamW(params=self.model.parameters(), lr=5e-6)  # check if the optimizer ok like this
         self.al_iteration = 0
+        self.current_accuracy = 0
 
+    # TODO early stopping
+    # Calc Accuracy in the training step
+    # check woth the currect accuracy if gets lower return
     def train(self, train_dataloader: DataLoader, al_iteration, epochs=1):
         # need criterion?
         wandb.watch(self.model, log='all', log_freq=10)
@@ -36,6 +40,7 @@ class Trainer:
         step = 0
         # Tells the model that we are training the model
         self.model.train()
+        # While accuracy does not go down don't stop then continue the outer loop (AL-Iterations)
         # Loop through the epochs
         for epoch in range(epochs):
             # print(f'Epoch {epoch}')
@@ -58,6 +63,8 @@ class Trainer:
                 # Update the progress bar
                 # progress_bar.update(1)
                 self.log_training(al_iteration, loss, epoch, step)
+
+
                 step += 1
         torch.cuda.empty_cache()
         return self.model

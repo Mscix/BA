@@ -3,7 +3,7 @@ from preprocessor import Preprocessor, get_first_reps_4_class, get_embeddings_fr
 import wandb
 import random
 import pandas as pd
-
+from sampler import Sampler
 class WeaklyLabeller:
 
     @staticmethod
@@ -26,6 +26,7 @@ class KMeansLabeller(WeaklyLabeller):
             # If not enough labelled instances
             centroids = get_first_reps_4_class(data.control, keep=True)
         else:
+            # TODO unfix? shuffle
             # If enough labelled instances
             centroids = get_first_reps_4_class(data.labelled, keep=True)
         self.kmeans = KMeans(n_clusters=num_clusters, random_state=42, init=centroids)
@@ -36,12 +37,12 @@ class KMeansLabeller(WeaklyLabeller):
 
     def label(self, to_label):
         embeddings = get_embeddings_from_df(to_label)
-        w_input = to_label['Class Index'].tolist()
+        w_input = to_label['Class Index'].sort_index().tolist()
 
         # Here is the actual labelling
         to_label['Class Index'] = self.get_fit_predict(embeddings)
 
-        w_output = to_label['Class Index'].tolist()
+        w_output = to_label['Class Index'].sort_index().tolist()
         wandb.log({'Weakly labeller error': self.calc_error(w_input, w_output)})
         return to_label
 
@@ -54,20 +55,42 @@ class CustomLabeller(WeaklyLabeller):
         self.error_rate = error_rate  # What type error_rate
         self.control_data = control_data
 
-    def label(self, to_label):
+    def _label(self, to_label):
         # Only works properly if Weakly Labeller called just once, otherwise just do with control data
         # Adjust that it is not dependent on the correct initial labels...
         n = int(self.error_rate * len(to_label))
+        print(len(to_label))
+        control = to_label.copy()
         re_label = to_label.sample(n=n, replace=False)
         false_labels = self.false_label(re_label)
-        to_label = pd.concat([to_label, false_labels])
-        print(to_label)
-        print(self.calc_error(to_label['Class Index'].tolist(), self.control_data['Class Index'].tolist()))
-        return to_label
+        result = pd.concat([to_label, false_labels])
+        print(f'LEN control{len(control)}')
+        print(f'LEN relable{len(re_label)}')
+        print(f'LEN result{len(result)}')
+
+        print(self.calc_error(result['Class Index'].sort_index().tolist(),
+                              control['Class Index'].sort_index().tolist()))
+        return result
+
+    def label(self, to_label):
+        # Should do:
+        # just relabel what it is to the same but 0.25 rate of error
+        print(f'Error rate: {self.error_rate}')
+        control = to_label.copy()
+        relabel, labels = Sampler.random_sampling(to_label, self.error_rate)
+        print(f'Actual error rate: {len(relabel) / len(to_label)}')
+
+        false_labels = self.false_label(relabel)
+        result = pd.concat([labels, false_labels])
+        print(self.calc_error(result['Class Index'].sort_index().tolist(),
+                              control['Class Index'].sort_index().tolist()))
+        return result
+
+
 
     @staticmethod
     def false_label(to_label):
-        operation = lambda x: random.choice([i for i in range(4) if i != x])
+        operation = lambda x: random.choice([i for i in range(4) if i != x])  # Discuss
         to_label['Class Index'] = to_label.apply(lambda row: operation(row['Class Index']), axis=1)
         return to_label
 
