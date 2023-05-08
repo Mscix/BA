@@ -50,8 +50,10 @@ class Main:
         self.strong_labeler = StrongLabeller(self.data.control)
 
         self.model.to(self.device)
-        self.trainer = Trainer(self.model, self.device)
-        self.evaluator = Evaluator(self.device)
+
+        self.eval_dataloader = to_data_loader(self.data.eval_data, self.device.type)
+        self.evaluator = Evaluator(self.device, self.eval_dataloader)
+        self.trainer = Trainer(self.model, self.device, self.evaluator)
         self.sampler = Sampler(self.device)
         self.sampling_method = sampling_method
         self.mode = mode
@@ -84,17 +86,10 @@ class Main:
             self.al(self.hyperparameters)
 
     def standard_ml(self, hyperparameters):
-        # Just for understanding, could have just pasted unlabelled for now
         self.data.labelled = self.strong_labeler.label(self.data.partial)
-
-        # train_dataloader = transform_data(self.data.labelled, self.device.type)
         train_dataloader = to_data_loader(self.data.labelled, self.device.type)
-
         trained_model = self.trainer.train(train_dataloader, 0)
-
-        # eval_dataloader = transform_data(self.data.eval_data, self.device.type)
-        eval_dataloader = to_data_loader(self.data.eval_data, self.device.type)
-        self.evaluator.eval(trained_model, eval_dataloader)
+        self.evaluator.eval(trained_model)
 
     # make absolute number of samples and approximate
     def al(self, hyperparameters):
@@ -104,11 +99,6 @@ class Main:
             sample_size = hyperparameters['N-Sample']
             al_iterations = hyperparameters['AL Iterations']
             print('AL Iteration: 0')
-
-
-            eval_dataloader = to_data_loader(self.data.eval_data, self.device.type)
-
-
 
             init_sample, self.data.partial = self.sampler.sample(self.data.partial, init_sample_size)
             self.data.labelled = self.strong_labeler.label(init_sample)
@@ -125,7 +115,7 @@ class Main:
             # train_dataloader = transform_data(train_set, self.device.type)
             train_dataloader = to_data_loader(train_set, self.device.type)
             self.trainer.train(train_dataloader, 0)
-            self.evaluator.eval(self.trainer.model, eval_dataloader)
+            # self.evaluator.eval(self.trainer.model)
 
             # loss.append(wandb.run.summary['loss'])
 
@@ -145,9 +135,8 @@ class Main:
 
                 # train_dataloader = transform_data(train_set, self.device.type)
                 train_dataloader = to_data_loader(train_set, self.device.type)
-                # TODO: here below early stopping nehmen
                 self.trainer.train(train_dataloader, i+1)
-                self.evaluator.eval(self.trainer.model, eval_dataloader)
+                # self.evaluator.eval(self.trainer.model)
                 # loss.append(wandb.run.summary['loss'])
 
             # p.standard_chart(y=loss, x_label='AL iteration', y_label='Loss',
@@ -159,10 +148,6 @@ class Main:
             sample_size = hyperparameters['N-Sample']
             al_iterations = hyperparameters['AL Iterations']
             print('AL Iteration: 0')
-
-            # eval_dataloader = transform_data(self.data.eval_data, self.device.type)
-            eval_dataloader = to_data_loader(self.data.eval_data, self.device.type)
-
             init_sample, self.data.partial = self.sampler.sample(self.data.partial, init_sample_size)
             self.data.labelled = self.strong_labeler.label(init_sample)
 
@@ -180,7 +165,7 @@ class Main:
             # train_dataloader = transform_data(train_set, self.device.type)
             train_dataloader = to_data_loader(train_set, self.device.type)
             self.trainer.train(train_dataloader, 0)
-            self.evaluator.eval(self.trainer.model, eval_dataloader)
+            self.evaluator.eval(self.trainer.model)
 
             # loss.append(wandb.run.summary['loss'])
 
@@ -202,7 +187,7 @@ class Main:
                 train_dataloader = to_data_loader(train_set, self.device.type)
 
                 self.trainer.train(train_dataloader, i + 1)
-                self.evaluator.eval(self.trainer.model, eval_dataloader)
+                self.evaluator.eval(self.trainer.model)
 
 
 if __name__ == "__main__":

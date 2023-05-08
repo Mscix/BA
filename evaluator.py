@@ -8,7 +8,7 @@ import wandb
 
 
 class Evaluator:
-    def __init__(self, device):
+    def __init__(self, device, eval_dataloader):
         self.device = device
         self.accuracy = evaluate.load('accuracy')
         self.recall = evaluate.load('recall')
@@ -25,16 +25,14 @@ class Evaluator:
         # A list for all predicted labels
         self.predictions_all = []
 
-    def eval(self, model, eval_dataloader):
-        if not eval_dataloader:
-            raise Exception('Before evaluating, Evaluator requires DataLoader to be set. Please use '
-                            '\'set_eval_loader(DataLoader)\'')
-        if not model:
-            raise Exception('Before evaluating, please set the model that should be evaluated.')
-        # Tells the model that we are evaluating the model performance
+        self.eval_dataloader = eval_dataloader
+
+        self.metrics_results = {}
+
+    def eval(self, model):
         model.eval()
 
-        for batch in eval_dataloader:
+        for batch in self.eval_dataloader:
             # Get the batch
             batch = {k: v.to(self.device) for k, v in batch.items()}
             # Disable the gradient calculation
@@ -60,17 +58,14 @@ class Evaluator:
         # Compute the metrics
         # zero_division=0, If there is no predicted Label for some class the score will be set to 0
         # This should only be a problem if the data set is small
-        metrics_results = {
+        self.metrics_results = {
             **self.accuracy.compute(),
             **self.recall.compute(average='macro', zero_division=0),
             **self.precision.compute(average='macro', zero_division=0),
             **self.f1.compute(average='macro')
         }
-        wandb.log(metrics_results)
+        wandb.log(self.metrics_results)
 
-        # TODO: save and export model
-        # torch.onnx.export(model, texts, 'model.onnx)
-        # wandb.save('model.onnx')  # Check how this works
 
     def get_predictions(self):
         return self.predictions_all

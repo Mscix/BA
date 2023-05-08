@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 
 
 class Trainer:
-    def __init__(self,  model, device):
+    def __init__(self,  model, device, evaluator):
         self.model = model
         self.device = device
         # Number of training steps
@@ -16,6 +16,8 @@ class Trainer:
         self.optimizer = AdamW(params=self.model.parameters(), lr=5e-6)  # check if the optimizer ok like this
         self.al_iteration = 0
         self.current_accuracy = 0
+        self.evaluator = evaluator
+        self.step = 0
 
     # TODO early stopping
     # Calc Accuracy in the training step
@@ -37,13 +39,17 @@ class Trainer:
 
         # Set the progress bar
         # progress_bar = tqdm(range(training_steps))  # had a problem with the progress bar before... or not?
-        step = 0
         # Tells the model that we are training the model
         self.model.train()
         # While accuracy does not go down don't stop then continue the outer loop (AL-Iterations)
         # Loop through the epochs
-        for epoch in range(epochs):
-            # print(f'Epoch {epoch}')
+        current_accuracy = 0
+        temp_model = self.model
+        epoch = 0
+        #for epoch in range(epochs):
+        # Early Stoppage
+        while True:
+
             # Loop through the batches
             for batch in train_dataloader:
                 # Get the batch
@@ -62,12 +68,25 @@ class Trainer:
                 self.optimizer.zero_grad()
                 # Update the progress bar
                 # progress_bar.update(1)
-                self.log_training(al_iteration, loss, epoch, step)
+                self.log_training(al_iteration, loss, epoch, self.step)
 
+                self.step += 1
+            epoch += 1
+            if epoch > 30:
+                raise Exception('Epoch too High eats too much GPU epoch=30.')
 
-                step += 1
-        torch.cuda.empty_cache()
-        return self.model
+            self.evaluator.eval(self.model)
+            # Stops if accuracy got worse and returns model from the iteration before
+            # TODO how to log this?
+            if current_accuracy < self.evaluator.metrics_results['accuracy']:
+                current_accuracy = self.evaluator.metrics_results['accuracy']
+            else:
+                torch.cuda.empty_cache()
+                return temp_model
+
+        #torch.cuda.empty_cache()
+        #
+        #return self.model
 
     @staticmethod
     def log_training(al_iteration, loss, epoch, step):
