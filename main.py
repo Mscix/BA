@@ -133,6 +133,7 @@ class Main:
                 # --------------- AL PLUS --------------- #
                 train_set = pd.concat([self.data.labelled, self.data.partial]) if self.mode == 'AL+' else \
                     self.data.labelled
+                print(f'Train Samples: {train_set}')
                 # --------------- AL PLUS --------------- #
                 train_dataloader = to_data_loader(train_set, self.device.type)
                 self.trainer.train(train_dataloader, i+1)
