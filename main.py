@@ -49,6 +49,9 @@ class Main:
 
         self.strong_labeler = StrongLabeller(self.data.control)
 
+
+        self.weak_labeler = KMeansLabeller(self.data, self.fixed_centroids)
+
         self.model.to(self.device)
 
         self.eval_dataloader = to_data_loader(self.data.eval_data, self.device.type)
@@ -73,7 +76,7 @@ class Main:
             # 'AL Iterations': al_iterations,
             'Sampling Method': sampling_method,
             'Init Sample Size': init_sample_size,
-            # 'N-Sample': [n_sample_size] * al_iterations
+            'N-Sample': n_sample_size
         }
 
     def run(self):
@@ -95,7 +98,7 @@ class Main:
         # loss = []
         with wandb.init(project='active-learning-plus', config=hyperparameters):
             init_sample_size = hyperparameters['Init Sample Size']
-            # sample_size = hyperparameters['N-Sample']
+            sample_size = hyperparameters['N-Sample']
             # al_iterations = hyperparameters['AL Iterations']
             print('AL Iteration: 0')
             init_sample, self.data.partial = self.sampler.sample(self.data.partial, init_sample_size)
@@ -105,8 +108,8 @@ class Main:
 
             # --------------- AL PLUS --------------- #
             if self.mode == 'AL+' or self.mode == 'ALI':
-                weak_labeler = KMeansLabeller(self.data, self.fixed_centroids)
-                self.data.partial = weak_labeler.label(self.data.partial)
+                # self.weak_labeler = KMeansLabeller(self.data, self.fixed_centroids)
+                self.data.partial = self.weak_labeler.label(self.data.partial)
                 train_set = pd.concat([self.data.labelled, self.data.partial])
             else:
                 train_set = self.data.labelled
@@ -114,17 +117,15 @@ class Main:
             train_dataloader = to_data_loader(train_set, self.device.type)
             self.trainer.train(train_dataloader, 0)
 
-            # Here early stoppage argument if accuracy did not improve from al iteration to al iteration
             current_accuracy = self.trainer.current_accuracy
             # for i in range(al_iterations):
             i = 0
-            epsilon = 0.02
+            #epsilon = 0.02
             counter = 0
             while True:
                 print(f'AL Iteration: {i+1}')
                 sample, self.data.partial = self.sampler.sample(data=self.data.partial,
-                                                                # sample_size=sample_size[i],
-                                                                sample_size=0.01,
+                                                                sample_size=sample_size,
                                                                 sampling_method=self.sampling_method,
                                                                 model=self.trainer.model
                                                                 )
