@@ -119,7 +119,7 @@ class Main:
             # for i in range(al_iterations):
             i = 0
             epsilon = 0.02
-
+            counter = 0
             while True:
                 print(f'AL Iteration: {i+1}')
                 sample, self.data.partial = self.sampler.sample(data=self.data.partial,
@@ -144,11 +144,13 @@ class Main:
                 # print total samples..
                 # retrun if no improvement here...
                 # log sample size and make it fixed?
-                if not self.trainer.current_accuracy + epsilon > current_accuracy:
-
+                if counter >= 2:
                     return
+                if not self.trainer.current_accuracy > current_accuracy:
+                    counter += 1
                 else:
                     current_accuracy = self.trainer.current_accuracy
+                    counter = 0
                 i += 1
 
 
