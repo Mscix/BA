@@ -64,6 +64,7 @@ class Evaluator:
             **self.precision.compute(average='macro', zero_division=0),
             **self.f1.compute(average='macro')
         }
+        print(self.metrics_results['accuracy'])
         wandb.log(self.metrics_results)
 
 
