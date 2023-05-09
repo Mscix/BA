@@ -85,9 +85,6 @@ class Trainer:
                 torch.cuda.empty_cache()
                 return temp_model
 
-        #torch.cuda.empty_cache()
-        #
-        #return self.model
 
     @staticmethod
     def log_training(al_iteration, loss, epoch, step):

@@ -111,14 +111,8 @@ class Main:
             else:
                 train_set = self.data.labelled
             # --------------- AL PLUS --------------- #
-
-            # train_dataloader = transform_data(train_set, self.device.type)
             train_dataloader = to_data_loader(train_set, self.device.type)
             self.trainer.train(train_dataloader, 0)
-            # self.evaluator.eval(self.trainer.model)
-
-            # loss.append(wandb.run.summary['loss'])
-
             for i in range(al_iterations):
                 print(f'AL Iteration: {i+1}')
                 sample, self.data.partial = self.sampler.sample(data=self.data.partial,
@@ -132,15 +126,8 @@ class Main:
                 train_set = pd.concat([self.data.labelled, self.data.partial]) if self.mode == 'AL+' else \
                     self.data.labelled
                 # --------------- AL PLUS --------------- #
-
-                # train_dataloader = transform_data(train_set, self.device.type)
                 train_dataloader = to_data_loader(train_set, self.device.type)
                 self.trainer.train(train_dataloader, i+1)
-                # self.evaluator.eval(self.trainer.model)
-                # loss.append(wandb.run.summary['loss'])
-
-            # p.standard_chart(y=loss, x_label='AL iteration', y_label='Loss',
-            #                 title='Loss - Training cycles')
 
     def proto(self, hyperparameters):
         with wandb.init(project='active-learning-plus', config=hyperparameters):
