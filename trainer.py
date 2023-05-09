@@ -43,7 +43,6 @@ class Trainer:
         self.model.train()
         # While accuracy does not go down don't stop then continue the outer loop (AL-Iterations)
         # Loop through the epochs
-        current_accuracy = 0
         temp_model = self.model
         epoch = 0
         #for epoch in range(epochs):
@@ -80,12 +79,12 @@ class Trainer:
             # Stops if accuracy got worse and returns model from the iteration before
             # TODO how to log this?
 
-            if current_accuracy <= self.evaluator.metrics_results['accuracy']:
-                print(current_accuracy)
+            if self.current_accuracy <= self.evaluator.metrics_results['accuracy']:
+                print(self.current_accuracy)
                 print(self.evaluator.metrics_results['accuracy'])
                 current_accuracy = self.evaluator.metrics_results['accuracy']
             else:
-                print(current_accuracy)
+                print(self.current_accuracy)
                 print(self.evaluator.metrics_results['accuracy'])
                 torch.cuda.empty_cache()
                 return temp_model

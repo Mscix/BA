@@ -113,7 +113,12 @@ class Main:
             # --------------- AL PLUS --------------- #
             train_dataloader = to_data_loader(train_set, self.device.type)
             self.trainer.train(train_dataloader, 0)
-            for i in range(al_iterations):
+
+            # Here early stoppage argument if accuracy did not improve from al iteration to al iteration
+            current_accuracy = self.trainer.current_accuracy
+            # for i in range(al_iterations):
+            i = 0
+            while True:
                 print(f'AL Iteration: {i+1}')
                 sample, self.data.partial = self.sampler.sample(data=self.data.partial,
                                                                 sample_size=sample_size[i],
@@ -128,6 +133,14 @@ class Main:
                 # --------------- AL PLUS --------------- #
                 train_dataloader = to_data_loader(train_set, self.device.type)
                 self.trainer.train(train_dataloader, i+1)
+                # the accuracy did not increase from previous iteration return
+                # next step du some epsilon which allows for some decrease
+                if current_accuracy > self.trainer.current_accuracy:
+                    return
+                else:
+                    current_accuracy = self.trainer.current_accuracy
+                i += 1
+
 
     def proto(self, hyperparameters):
         with wandb.init(project='active-learning-plus', config=hyperparameters):
