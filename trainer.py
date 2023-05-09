@@ -63,7 +63,7 @@ class Trainer:
                 # Update the model weights
                 self.optimizer.step()
                 # Learning rate scheduler
-                scheduler.step()
+                #scheduler.step()
                 # Clear the gradients
                 self.optimizer.zero_grad()
                 # Update the progress bar
