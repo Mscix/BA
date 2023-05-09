@@ -70,10 +70,10 @@ class Main:
             'Train Set': len(self.data.train_data),
             # 'Batch Size': 2 if self.device.type == 'CPU' else 256,
             # 'Epochs': epochs,
-            'AL Iterations': al_iterations,
+            # 'AL Iterations': al_iterations,
             'Sampling Method': sampling_method,
             'Init Sample Size': init_sample_size,
-            'N-Sample': [n_sample_size] * al_iterations
+            # 'N-Sample': [n_sample_size] * al_iterations
         }
 
     def run(self):
