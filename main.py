@@ -146,7 +146,7 @@ class Main:
                 # log sample size and make it fixed?
                 # Tweak how good Weakly labelelr is
                 # Parameter übergabe weakly labeller / pseudo labelling
-                if counter >= 2:
+                if counter >= 4:
                     return
                 if not self.trainer.current_accuracy > current_accuracy:
                     counter += 1
