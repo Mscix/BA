@@ -120,7 +120,6 @@ class Main:
             i = 0
             epsilon = 0.02
             counter = 0
-            total_samples = 0
             while True:
                 print(f'AL Iteration: {i+1}')
                 sample, self.data.partial = self.sampler.sample(data=self.data.partial,
@@ -134,9 +133,6 @@ class Main:
                 # --------------- AL PLUS --------------- #
                 train_set = pd.concat([self.data.labelled, self.data.partial]) if self.mode == 'AL+' else \
                     self.data.labelled
-                print(f'Train Samples: {len(train_set)}')
-                total_samples += len(train_set)
-                print(f'Total Samples: {total_samples}')
                 # --------------- AL PLUS --------------- #
                 train_dataloader = to_data_loader(train_set, self.device.type)
                 self.trainer.train(train_dataloader, i+1)

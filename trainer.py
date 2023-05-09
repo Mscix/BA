@@ -74,7 +74,7 @@ class Trainer:
             self.evaluator.eval(self.model)
             # Stops if accuracy got worse and returns model from the iteration before
             # TODO how to log this?
-
+            print(f'Step: {self.step}')
             if self.current_accuracy <= self.evaluator.metrics_results['accuracy']:
                 print(str(self.current_accuracy) + ' <= ' + str(self.evaluator.metrics_results['accuracy']))
                 self.current_accuracy = self.evaluator.metrics_results['accuracy']
