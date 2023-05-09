@@ -96,8 +96,8 @@ class Main:
         # loss = []
         with wandb.init(project='active-learning-plus', config=hyperparameters):
             init_sample_size = hyperparameters['Init Sample Size']
-            sample_size = hyperparameters['N-Sample']
-            al_iterations = hyperparameters['AL Iterations']
+            # sample_size = hyperparameters['N-Sample']
+            # al_iterations = hyperparameters['AL Iterations']
             print('AL Iteration: 0')
 
             init_sample, self.data.partial = self.sampler.sample(self.data.partial, init_sample_size)
