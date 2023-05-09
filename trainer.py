@@ -78,7 +78,7 @@ class Trainer:
             if self.current_accuracy <= self.evaluator.metrics_results['accuracy']:
                 print(self.current_accuracy)
                 print(self.evaluator.metrics_results['accuracy'])
-                current_accuracy = self.evaluator.metrics_results['accuracy']
+                self.current_accuracy = self.evaluator.metrics_results['accuracy']
             else:
                 print(self.current_accuracy)
                 print(self.evaluator.metrics_results['accuracy'])
