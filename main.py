@@ -118,6 +118,7 @@ class Main:
             current_accuracy = self.trainer.current_accuracy
             # for i in range(al_iterations):
             i = 0
+            epsilon = 0.02
             while True:
                 print(f'AL Iteration: {i+1}')
                 sample, self.data.partial = self.sampler.sample(data=self.data.partial,
@@ -136,7 +137,12 @@ class Main:
                 self.trainer.train(train_dataloader, i+1)
                 # the accuracy did not increase from previous iteration return
                 # next step du some epsilon which allows for some decrease
-                if current_accuracy > self.trainer.current_accuracy:
+                # Is this achievable?
+                # need some other stopping condition...and or propage the model with the said accuracy like in trainer
+                # Model did not surpass accuracy of 0.8925
+                # print total samples..
+                # retrun if no improvement here...
+                if not self.trainer.current_accuracy > current_accuracy:
                     return
                 else:
                     current_accuracy = self.trainer.current_accuracy
