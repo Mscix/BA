@@ -84,10 +84,11 @@ class Main:
             self.al(self.hyperparameters)
 
     def standard_ml(self, hyperparameters):
-        self.data.labelled = self.strong_labeler.label(self.data.partial)
-        train_dataloader = to_data_loader(self.data.labelled, self.device.type)
-        trained_model = self.trainer.train(train_dataloader, 0)
-        self.evaluator.eval(trained_model)
+        with wandb.init(project='active-learning-plus', config=hyperparameters):
+            self.data.labelled = self.strong_labeler.label(self.data.partial)
+            train_dataloader = to_data_loader(self.data.labelled, self.device.type)
+            trained_model = self.trainer.train(train_dataloader, 0)
+            self.evaluator.eval(trained_model)
 
     # make absolute number of samples and approximate
     def al(self, hyperparameters):
