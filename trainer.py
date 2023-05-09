@@ -71,10 +71,6 @@ class Trainer:
 
                 self.step += 1
             print(f'Epoch {epoch}')
-            epoch += 1
-            if epoch > 30:
-                raise Exception('Epoch too High eats too much GPU epoch=30.')
-
             self.evaluator.eval(self.model)
             # Stops if accuracy got worse and returns model from the iteration before
             # TODO how to log this?
