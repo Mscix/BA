@@ -79,7 +79,10 @@ class Trainer:
             self.evaluator.eval(self.model)
             # Stops if accuracy got worse and returns model from the iteration before
             # TODO how to log this?
+
             if current_accuracy < self.evaluator.metrics_results['accuracy']:
+                print(current_accuracy)
+                print(self.evaluator.metrics_results['accuracy'])
                 current_accuracy = self.evaluator.metrics_results['accuracy']
             else:
                 torch.cuda.empty_cache()
