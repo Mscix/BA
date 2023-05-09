@@ -79,8 +79,6 @@ class Main:
     def run(self):
         if self.mode == 'Standard':
             self.standard_ml(self.hyperparameters)
-        elif self.mode == 'Dev':
-            self.proto(self.hyperparameters)
         else:
             # Default
             self.al(self.hyperparameters)
@@ -99,12 +97,13 @@ class Main:
             # sample_size = hyperparameters['N-Sample']
             # al_iterations = hyperparameters['AL Iterations']
             print('AL Iteration: 0')
-
             init_sample, self.data.partial = self.sampler.sample(self.data.partial, init_sample_size)
             self.data.labelled = self.strong_labeler.label(init_sample)
+            print(f'Total strong labels: {len(self.data.labelled)}')
+            wandb.log({'Strong Labels': self.data.labelled})
 
             # --------------- AL PLUS --------------- #
-            if self.mode == 'AL+':
+            if self.mode == 'AL+' or self.mode == 'ALI':
                 weak_labeler = KMeansLabeller(self.data, self.fixed_centroids)
                 self.data.partial = weak_labeler.label(self.data.partial)
                 train_set = pd.concat([self.data.labelled, self.data.partial])
@@ -129,24 +128,15 @@ class Main:
                                                                 model=self.trainer.model
                                                                 )
                 self.data.labelled = pd.concat([self.data.labelled, self.strong_labeler.label(sample)])
-
+                print(f'Total strong labels: {len(self.data.labelled)}')
+                wandb.log({'Strong Labels': self.data.labelled})
                 # --------------- AL PLUS --------------- #
                 train_set = pd.concat([self.data.labelled, self.data.partial]) if self.mode == 'AL+' else \
                     self.data.labelled
                 # --------------- AL PLUS --------------- #
                 train_dataloader = to_data_loader(train_set, self.device.type)
                 self.trainer.train(train_dataloader, i+1)
-                # the accuracy did not increase from previous iteration return
-                # next step du some epsilon which allows for some decrease
-                # Is this achievable?
-                # need some other stopping condition...and or propage the model with the said accuracy like in trainer
-                # Model did not surpass accuracy of 0.8925
-                # print total samples..
-                # retrun if no improvement here...
-                # log sample size and make it fixed?
-                # Tweak how good Weakly labelelr is
-                # Parameter übergabe weakly labeller / pseudo labelling
-                if counter >= 4:
+                if counter >= 3:
                     return
                 if not self.trainer.current_accuracy > current_accuracy:
                     counter += 1
@@ -156,61 +146,13 @@ class Main:
                 i += 1
 
 
-    def proto(self, hyperparameters):
-        with wandb.init(project='active-learning-plus', config=hyperparameters):
-            init_sample_size = hyperparameters['Init Sample Size']
-            sample_size = hyperparameters['N-Sample']
-            al_iterations = hyperparameters['AL Iterations']
-            print('AL Iteration: 0')
-            init_sample, self.data.partial = self.sampler.sample(self.data.partial, init_sample_size)
-            self.data.labelled = self.strong_labeler.label(init_sample)
-
-            # --------------- AL PLUS --------------- #
-            if self.mode == 'Dev':
-                # print(self.weakly_error)
-                weak_labeler = CustomLabeller(self.weakly_error, self.data.control)
-                print(len(self.data.partial))
-                self.data.partial = weak_labeler.label(self.data.partial)
-                train_set = pd.concat([self.data.labelled, self.data.partial])
-            else:
-                train_set = self.data.labelled
-            # --------------- AL PLUS --------------- #
-
-            # train_dataloader = transform_data(train_set, self.device.type)
-            train_dataloader = to_data_loader(train_set, self.device.type)
-            self.trainer.train(train_dataloader, 0)
-            self.evaluator.eval(self.trainer.model)
-
-            # loss.append(wandb.run.summary['loss'])
-
-            for i in range(al_iterations):
-                print(f'AL Iteration: {i + 1}')
-                sample, self.data.partial = self.sampler.sample(data=self.data.partial,
-                                                                sample_size=sample_size[i],
-                                                                sampling_method=self.sampling_method,
-                                                                model=self.trainer.model
-                                                                )
-                self.data.labelled = pd.concat([self.data.labelled, self.strong_labeler.label(sample)])
-
-                # --------------- AL PLUS --------------- #
-                train_set = pd.concat([self.data.labelled, self.data.partial]) if self.mode == 'Dev' else \
-                    self.data.labelled
-                # --------------- AL PLUS --------------- #
-
-                # train_dataloader = transform_data(train_set, self.device.type)
-                train_dataloader = to_data_loader(train_set, self.device.type)
-
-                self.trainer.train(train_dataloader, i + 1)
-                self.evaluator.eval(self.trainer.model)
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process passed Hyperparameters.')
 
     parser.add_argument('-p', '--path', type=str, help='Path to the csv file with the data set.',
                         default='/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/small_t.csv')
 
-    parser.add_argument('-m', '--mode', type=str, choices=['AL', 'AL+', 'Dev', 'Standard'], default='AL+',
+    parser.add_argument('-m', '--mode', type=str, choices=['AL', 'AL+', 'ALI', 'Standard'], default='AL+',
                         help='The Learning mode.')
 
     parser.add_argument('-sm', '--sampling_method', type=str, choices=['Random', 'EC', 'LC', 'MC', 'RC'],
