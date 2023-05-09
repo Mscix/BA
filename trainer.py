@@ -85,6 +85,8 @@ class Trainer:
                 print(self.evaluator.metrics_results['accuracy'])
                 current_accuracy = self.evaluator.metrics_results['accuracy']
             else:
+                print(current_accuracy)
+                print(self.evaluator.metrics_results['accuracy'])
                 torch.cuda.empty_cache()
                 return temp_model
 
