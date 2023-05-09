@@ -121,7 +121,8 @@ class Main:
             while True:
                 print(f'AL Iteration: {i+1}')
                 sample, self.data.partial = self.sampler.sample(data=self.data.partial,
-                                                                sample_size=sample_size[i],
+                                                                # sample_size=sample_size[i],
+                                                                sample_size=0.01,
                                                                 sampling_method=self.sampling_method,
                                                                 model=self.trainer.model
                                                                 )
