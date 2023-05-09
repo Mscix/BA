@@ -76,12 +76,10 @@ class Trainer:
             # TODO how to log this?
 
             if self.current_accuracy <= self.evaluator.metrics_results['accuracy']:
-                print(self.current_accuracy)
-                print(self.evaluator.metrics_results['accuracy'])
+                print(str(self.current_accuracy) + ' <= ' + str(self.evaluator.metrics_results['accuracy']))
                 self.current_accuracy = self.evaluator.metrics_results['accuracy']
             else:
-                print(self.current_accuracy)
-                print(self.evaluator.metrics_results['accuracy'])
+                print(str(self.current_accuracy) + ' > ' + str(self.evaluator.metrics_results['accuracy']))
                 torch.cuda.empty_cache()
                 return temp_model
 
