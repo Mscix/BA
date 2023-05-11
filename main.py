@@ -65,15 +65,10 @@ class Main:
         # pass the actual error rate also? because if insufficient data size
         self.hyperparameters = {
             'Mode': mode,
-            # 'Classes': 4,
-            # 'Model Name': model_name,
             'Weak Labeler': weak_labeler,
             'Weakly Error': weakly_error,
             'Data Set': 'AG_NEWS',
             'Train Set': len(self.data.train_data),
-            # 'Batch Size': 2 if self.device.type == 'CPU' else 256,
-            # 'Epochs': epochs,
-            # 'AL Iterations': al_iterations,
             'Sampling Method': sampling_method,
             'Init Sample Size': init_sample_size,
             'N-Sample': n_sample_size
@@ -99,13 +94,10 @@ class Main:
         with wandb.init(project='active-learning-plus', config=hyperparameters):
             init_sample_size = hyperparameters['Init Sample Size']
             sample_size = hyperparameters['N-Sample']
-            print('Sample size:' + str(sample_size))
-            # al_iterations = hyperparameters['AL Iterations']
+            i = 0
             print('AL Iteration: 0')
             init_sample, self.data.partial = self.sampler.sample(self.data.partial, init_sample_size)
             self.data.labelled = self.strong_labeler.label(init_sample)
-            print(f'Total strong labels: {len(self.data.labelled)}')
-            wandb.log({'Strong Labels': len(self.data.labelled)})
 
             # --------------- AL PLUS --------------- #
             if self.mode == 'AL+' or self.mode == 'ALI':
@@ -116,12 +108,10 @@ class Main:
                 train_set = self.data.labelled
             # --------------- AL PLUS --------------- #
             train_dataloader = to_data_loader(train_set, self.device.type)
-            self.trainer.train(train_dataloader, 0, strong_labels=len(self.data.labelled))
+            self.trainer.train(train_dataloader, self.data, 0)
 
             current_accuracy = self.trainer.current_accuracy
-            # for i in range(al_iterations):
 
-            i = 0
             counter = 0
             while True:
                 print(f'AL Iteration: {i+1}')
@@ -131,14 +121,12 @@ class Main:
                                                                 model=self.trainer.model
                                                                 )
                 self.data.labelled = pd.concat([self.data.labelled, self.strong_labeler.label(sample)])
-                print(f'Total strong labels: {len(self.data.labelled)}')
-                wandb.log({'Strong Labels': len(self.data.labelled)})
                 # --------------- AL PLUS --------------- #
                 train_set = pd.concat([self.data.labelled, self.data.partial]) if self.mode == 'AL+' else \
                     self.data.labelled
                 # --------------- AL PLUS --------------- #
                 train_dataloader = to_data_loader(train_set, self.device.type)
-                self.trainer.train(train_dataloader, i+1, strong_labels=len(self.data.labelled))
+                self.trainer.train(train_dataloader, self.data,  i+1)
                 if counter >= 3:
                     return
                 if not self.trainer.current_accuracy > current_accuracy:

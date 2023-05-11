@@ -24,7 +24,7 @@ def to_data_loader(df, device):
     else:
         batch_size = 2
     data = DataLoader(dataset=data, batch_size=batch_size)
-    # TODO check if this does anything, is in place?
+
     if device == 'cuda':
         for batch_id, sample in enumerate(data):
             labels = sample['labels'].to('cuda')
