@@ -102,7 +102,7 @@ class Main:
             init_sample, self.data.partial = self.sampler.sample(self.data.partial, init_sample_size)
             self.data.labelled = self.strong_labeler.label(init_sample)
             print(f'Total strong labels: {len(self.data.labelled)}')
-            wandb.log({'Strong Labels': self.data.labelled})
+            wandb.log({'Strong Labels': len(self.data.labelled)})
 
             # --------------- AL PLUS --------------- #
             if self.mode == 'AL+' or self.mode == 'ALI':
@@ -129,7 +129,7 @@ class Main:
                                                                 )
                 self.data.labelled = pd.concat([self.data.labelled, self.strong_labeler.label(sample)])
                 print(f'Total strong labels: {len(self.data.labelled)}')
-                wandb.log({'Strong Labels': self.data.labelled})
+                wandb.log({'Strong Labels': len(self.data.labelled)})
                 # --------------- AL PLUS --------------- #
                 train_set = pd.concat([self.data.labelled, self.data.partial]) if self.mode == 'AL+' else \
                     self.data.labelled
