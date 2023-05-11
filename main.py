@@ -183,6 +183,12 @@ if __name__ == "__main__":
     _epochs = args.epochs
     _init_sample_size = args.init_sample_size
     _n_sample_size = args.n_sample_size
+    if _n_sample_size >= 1:
+        try:
+            _n_sample_size = int(_n_sample_size)
+        except ValueError:
+            raise argparse.ArgumentTypeError('Argument parser failed.')
+
     _al_iterations = args.al_iterations
     _weakly_error = args.weakly_error
 
@@ -195,3 +201,4 @@ if __name__ == "__main__":
              n_sample_size=_n_sample_size,
              init_sample_size=_init_sample_size)
     m.run()
+
