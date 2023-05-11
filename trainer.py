@@ -26,7 +26,6 @@ class Trainer:
         self.model.train()
         epoch = 0
         while True:
-
             # Loop through the batches
             for batch in train_dataloader:
                 # Get the batch
@@ -64,8 +63,12 @@ class Trainer:
 
     def reset_model(self):
         if self.resetting_model:
-            # self.model.base_model.reset_weights()
-            self.model.apply(lambda x: x.reset_parameters())
+            self.model = self.model.to("cpu")
+            torch.cuda.empty_cache()
+            model = AutoModelForSequenceClassification.from_pretrained("bert-base-cased", num_labels=4)
+            # Move the model and its tensors back to the GPU
+            self.model = model.to(self.device)
+            torch.cuda.empty_cache()
 
     @staticmethod
     def log_training(al_iteration, loss, epoch, strong_labels):
