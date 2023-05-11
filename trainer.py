@@ -19,11 +19,11 @@ class Trainer:
         self.evaluator = evaluator
         self.resetting_model = resetting_model
 
-    def train(self, train_dataloader: DataLoader, data: Preprocessor, al_iteration=0 ):
+    def train(self, train_dataloader: DataLoader, data: Preprocessor, al_iteration=0):
         # need criterion?
         wandb.watch(self.model, log='all', log_freq=10)
-        if al_iteration > 0:
-            self.reset_model()
+        #if al_iteration > 0:
+        self.reset_model()
         self.model.train()
         epoch = 0
         while True:
