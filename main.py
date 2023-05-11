@@ -22,7 +22,8 @@ class Main:
                  epochs=1,
                  al_iterations=3,
                  init_sample_size=0.05,
-                 n_sample_size=0.01):
+                 n_sample_size=0.01,
+                 resetting_model=False):
 
         # Load model
         model_name = "bert-base-cased"
@@ -54,13 +55,11 @@ class Main:
 
         self.eval_dataloader = to_data_loader(self.data.eval_data, self.device.type)
         self.evaluator = Evaluator(self.device, self.eval_dataloader)
-        self.trainer = Trainer(self.model, self.device, self.evaluator)
+        self.trainer = Trainer(self.model, self.device, self.evaluator, resetting_model)
         self.sampler = Sampler(self.device)
         self.sampling_method = sampling_method
         self.mode = mode
         self.weakly_error = weakly_error
-
-        print(n_sample_size)
 
         # pass the actual error rate also? because if insufficient data size
         self.hyperparameters = {
@@ -71,7 +70,8 @@ class Main:
             'Train Set': len(self.data.train_data),
             'Sampling Method': sampling_method,
             'Init Sample Size': init_sample_size,
-            'N-Sample': n_sample_size
+            'N-Sample': n_sample_size,
+            'Reset Model': resetting_model
         }
 
     def run(self):
@@ -85,10 +85,8 @@ class Main:
         with wandb.init(project='active-learning-plus', config=hyperparameters):
             self.data.labelled = self.strong_labeler.label(self.data.partial)
             train_dataloader = to_data_loader(self.data.labelled, self.device.type)
-            trained_model = self.trainer.train(train_dataloader, 0)
-            self.evaluator.eval(trained_model)
+            self.trainer.train(train_dataloader, self.data, 0)
 
-    # make absolute number of samples and approximate
     def al(self, hyperparameters):
         # loss = []
         with wandb.init(project='active-learning-plus', config=hyperparameters):
@@ -163,6 +161,9 @@ if __name__ == "__main__":
     parser.add_argument('-err', '--weakly_error', type=float, default=0.25,
                         help='The error rate of the custom WeaklyLabeller')
 
+    parser.add_argument('-r', '--resetting_model', type=bool, default=False,
+                        help='Should the model be reset for each training?')
+
     args = parser.parse_args()
 
     data_path = args.path
@@ -179,6 +180,7 @@ if __name__ == "__main__":
 
     _al_iterations = args.al_iterations
     _weakly_error = args.weakly_error
+    _resetting_model = args.resetting_model
 
     m = Main(data_path,
              pipeline_mode,
@@ -187,6 +189,8 @@ if __name__ == "__main__":
              epochs=_epochs,
              al_iterations=_al_iterations,
              n_sample_size=_n_sample_size,
-             init_sample_size=_init_sample_size)
+             init_sample_size=_init_sample_size,
+             resetting_model=_resetting_model
+             )
     m.run()
 
