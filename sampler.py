@@ -42,7 +42,7 @@ class Sampler:
 
     def uncertainty_sampling(self, data, sample_size, model, method, reverse):
         # if sample_size is a float converts it to an absolute n
-        if isinstance(sample_size, float):
+        if isinstance(sample_size, float) and sample_size < 1:
             sample_size = math.floor(len(data) * sample_size)
 
         input_data = to_data_loader(data, self.device.type)
@@ -72,6 +72,7 @@ class Sampler:
 
     @staticmethod
     def sample_by_value(data, sample_size, values, reverse):
+        print('HERERER SAMPLE SIZE' + str(sample_size))
         zipped = zip(data.index.tolist(), values)
         # sorts
         # use different sorting method?
