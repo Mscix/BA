@@ -64,7 +64,8 @@ class Trainer:
 
     def reset_model(self):
         if self.resetting_model:
-            self.model.base_model.reset_weights()
+            # self.model.base_model.reset_weights()
+            self.model.apply(lambda x: x.reset_parameters())
 
     @staticmethod
     def log_training(al_iteration, loss, epoch, strong_labels):
