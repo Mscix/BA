@@ -57,7 +57,7 @@ class Trainer:
             size_labelled = len(data.labelled)
             percent_labelled = (len(data.labelled) / len(data.train_data)) * 100
 
-            eval_obj = {'epoch': epoch, "Strong Labels": size_labelled,
+            eval_obj = {"AL Iteration": al_iteration, 'epoch': epoch, "Strong Labels": size_labelled,
                         'Percent Labelled': percent_labelled}
             self.evaluator.eval(self.model, eval_obj)
 
