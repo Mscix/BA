@@ -22,7 +22,7 @@ class Trainer:
     def train(self, train_dataloader: DataLoader, data: Preprocessor, al_iteration=0 ):
         # need criterion?
         wandb.watch(self.model, log='all', log_freq=10)
-        # self.reset_model()
+        self.reset_model()
         self.model.train()
         epoch = 0
         while True:
