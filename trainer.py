@@ -71,7 +71,8 @@ class Trainer:
 
                 self.step += 1
             print(f'Epoch {epoch}')
-            self.evaluator.eval(self.model)
+            eval_obj = {'epoch': epoch, "Strong Labels": strong_labels}
+            self.evaluator.eval(self.model, eval_obj)
             # Stops if accuracy got worse and returns model from the iteration before
             # TODO how to log this?
             print(f'Step: {self.step}')

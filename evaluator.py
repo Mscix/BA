@@ -29,7 +29,7 @@ class Evaluator:
 
         self.metrics_results = {}
 
-    def eval(self, model):
+    def eval(self, model, eval_obj):
         model.eval()
 
         for batch in self.eval_dataloader:
@@ -62,7 +62,8 @@ class Evaluator:
             **self.accuracy.compute(),
             **self.recall.compute(average='macro', zero_division=0),
             **self.precision.compute(average='macro', zero_division=0),
-            **self.f1.compute(average='macro')
+            **self.f1.compute(average='macro'),
+            **eval_obj
         }
         wandb.log(self.metrics_results)
 

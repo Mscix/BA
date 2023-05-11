@@ -72,7 +72,6 @@ class Sampler:
 
     @staticmethod
     def sample_by_value(data, sample_size, values, reverse):
-        print('HERERER SAMPLE SIZE' + str(sample_size))
         zipped = zip(data.index.tolist(), values)
         # sorts
         # use different sorting method?
