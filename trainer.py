@@ -64,7 +64,7 @@ class Trainer:
 
     def reset_model(self):
         if self.resetting_model:
-            self.model = AutoModelForSequenceClassification.from_pretrained("bert-base-cased", num_labels=4)
+            self.model.base_model.reset_weights()
 
     @staticmethod
     def log_training(al_iteration, loss, epoch, strong_labels):
