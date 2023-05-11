@@ -22,7 +22,7 @@ class Trainer:
     # TODO early stopping
     # Calc Accuracy in the training step
     # check woth the currect accuracy if gets lower return
-    def train(self, train_dataloader: DataLoader, al_iteration, epochs=1):
+    def train(self, train_dataloader: DataLoader, al_iteration, epochs=1, strong_labels=0):
         # need criterion?
         wandb.watch(self.model, log='all', log_freq=10)
         training_steps = epochs * len(train_dataloader)  # steps would be 64 but 8 Batches a 4 a 2 epochs
@@ -67,7 +67,7 @@ class Trainer:
                 self.optimizer.zero_grad()
                 # Update the progress bar
                 # progress_bar.update(1)
-                self.log_training(al_iteration, loss, epoch, self.step)
+                self.log_training(al_iteration, loss, epoch, self.step, strong_labels)
 
                 self.step += 1
             print(f'Epoch {epoch}')
@@ -85,10 +85,6 @@ class Trainer:
                 return temp_model
             epoch += 1
 
-
-
     @staticmethod
-    def log_training(al_iteration, loss, epoch, step):
-        wandb.log({"AL Iteration": al_iteration, "epoch": epoch, "loss": loss})  # Deleted epoch for now
-        # print(f"AL Iteration: {al_iteration}, Epoch: {epoch},"
-        #      f" Loss {loss:.3f} after total batches {str(step).zfill(7)}")
+    def log_training(al_iteration, loss, epoch, step, strong_labels):
+        wandb.log({"AL Iteration": al_iteration, "epoch": epoch, "loss": loss, "Strong Labels": strong_labels})

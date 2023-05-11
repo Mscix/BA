@@ -21,8 +21,8 @@ class Main:
                  weakly_error=0.25,
                  epochs=1,
                  al_iterations=3,
-                 init_sample_size=0.2,
-                 n_sample_size=0.1):
+                 init_sample_size=0.05,
+                 n_sample_size=0.01):
 
         # Load model
         model_name = "bert-base-cased"
@@ -59,6 +59,8 @@ class Main:
         self.sampling_method = sampling_method
         self.mode = mode
         self.weakly_error = weakly_error
+
+        print(n_sample_size)
 
         # pass the actual error rate also? because if insufficient data size
         self.hyperparameters = {
@@ -97,6 +99,7 @@ class Main:
         with wandb.init(project='active-learning-plus', config=hyperparameters):
             init_sample_size = hyperparameters['Init Sample Size']
             sample_size = hyperparameters['N-Sample']
+            print('Sample size:' + str(sample_size))
             # al_iterations = hyperparameters['AL Iterations']
             print('AL Iteration: 0')
             init_sample, self.data.partial = self.sampler.sample(self.data.partial, init_sample_size)
@@ -113,12 +116,12 @@ class Main:
                 train_set = self.data.labelled
             # --------------- AL PLUS --------------- #
             train_dataloader = to_data_loader(train_set, self.device.type)
-            self.trainer.train(train_dataloader, 0)
+            self.trainer.train(train_dataloader, 0, strong_labels=len(self.data.labelled))
 
             current_accuracy = self.trainer.current_accuracy
             # for i in range(al_iterations):
+
             i = 0
-            #epsilon = 0.02
             counter = 0
             while True:
                 print(f'AL Iteration: {i+1}')
@@ -135,7 +138,7 @@ class Main:
                     self.data.labelled
                 # --------------- AL PLUS --------------- #
                 train_dataloader = to_data_loader(train_set, self.device.type)
-                self.trainer.train(train_dataloader, i+1)
+                self.trainer.train(train_dataloader, i+1, strong_labels=len(self.data.labelled))
                 if counter >= 3:
                     return
                 if not self.trainer.current_accuracy > current_accuracy:
@@ -161,10 +164,10 @@ if __name__ == "__main__":
     parser.add_argument('-ep', '--epochs', type=int, default=1,
                         help='How many epochs.')
 
-    parser.add_argument('-iss', '--init_sample_size', type=float, default=0.2,
+    parser.add_argument('-iss', '--init_sample_size', type=float, default=0.05,
                         help='Initial random sample size.')
 
-    parser.add_argument('-ns', '--n_sample_size', type=float, default=0.1,
+    parser.add_argument('-ns', '--n_sample_size', type=float, default=0.01,
                         help='Sample size in the subsequents AL iterations.')
 
     parser.add_argument('-ait', '--al_iterations', type=int, default=3, help='Number of AL iterations.')
