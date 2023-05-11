@@ -26,7 +26,7 @@ class Trainer:
     def train(self, train_dataloader: DataLoader, data: Preprocessor, al_iteration=0 ):
         # need criterion?
         wandb.watch(self.model, log='all', log_freq=10)
-        scheduler = get_scheduler(name="linear", optimizer=self.optimizer, num_warmup_steps=0)
+        # scheduler = get_scheduler(name="linear", optimizer=self.optimizer, num_warmup_steps=0)
 
         self.model.train()
         temp_model = self.model
