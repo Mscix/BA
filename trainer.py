@@ -59,7 +59,6 @@ class Trainer:
                 print(str(self.current_accuracy) + ' > ' + str(self.evaluator.metrics_results['accuracy']))
                 torch.cuda.empty_cache()
                 # Set back
-                self.current_accuracy = 0
                 return
             epoch += 1
 
@@ -72,6 +71,7 @@ class Trainer:
             # Move the model and its tensors back to the GPU
             self.model = model.to(self.device)
             self.optimizer = AdamW(params=self.model.parameters(), lr=5e-6)
+            self.current_accuracy = 0
             torch.cuda.empty_cache()
 
     @staticmethod
