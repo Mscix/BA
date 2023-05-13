@@ -49,7 +49,7 @@ class Main:
             # Set data Labels to ambiguous number but only if fixed_centroids = false
 
         self.strong_labeler = StrongLabeller(self.data.control)
-        self.weak_labeler = CustomLabeller(0.25, self.data.control)
+        self.weak_labeler = CustomLabeller(weakly_error, self.data.control)
 
         self.model.to(self.device)
 
