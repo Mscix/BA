@@ -1,12 +1,10 @@
 import wandb
 import torch
 from torch.optim import AdamW
-from transformers import get_scheduler
+# from transformers import get_scheduler
 from torch.utils.data import DataLoader
 from preprocessor import Preprocessor
 from transformers import AutoModelForSequenceClassification
-# Progress bar
-# from tqdm.auto import tqdm
 
 
 class Trainer:
@@ -22,7 +20,6 @@ class Trainer:
     def train(self, train_dataloader: DataLoader, data: Preprocessor, al_iteration=0):
         # need criterion?
         wandb.watch(self.model, log='all', log_freq=10)
-        #if al_iteration > 0:
         self.reset_model()
         self.model.train()
         epoch = 0
@@ -45,19 +42,20 @@ class Trainer:
                 self.log_training(al_iteration, loss, epoch, len(data.labelled))
 
             print(f'Epoch {epoch}')
-            size_labelled = len(data.labelled)
-            percent_labelled = (len(data.labelled) / len(data.train_data)) * 100
+            eval_obj = {
+                "AL Iteration": al_iteration,
+                'epoch': epoch,
+                "Strong Labels": len(data.labelled)
+            }
 
-            eval_obj = {"AL Iteration": al_iteration, 'epoch': epoch, "Strong Labels": size_labelled,
-                        'Percent Labelled': percent_labelled}
             self.evaluator.eval(self.model, eval_obj)
 
             # Stops if accuracy got worse and returns model from the iteration before
-            if self.current_accuracy < self.evaluator.metrics_results['accuracy']:
-                print(str(self.current_accuracy) + ' < ' + str(self.evaluator.metrics_results['accuracy']))
+            if self.current_accuracy <= self.evaluator.metrics_results['accuracy']:
+                print(str(self.current_accuracy) + ' <= ' + str(self.evaluator.metrics_results['accuracy']))
                 self.current_accuracy = self.evaluator.metrics_results['accuracy']
             else:
-                print(str(self.current_accuracy) + ' => ' + str(self.evaluator.metrics_results['accuracy']))
+                print(str(self.current_accuracy) + ' > ' + str(self.evaluator.metrics_results['accuracy']))
                 torch.cuda.empty_cache()
                 return
             epoch += 1
