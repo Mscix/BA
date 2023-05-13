@@ -68,6 +68,7 @@ class Trainer:
             model = AutoModelForSequenceClassification.from_pretrained("bert-base-cased", num_labels=4)
             # Move the model and its tensors back to the GPU
             self.model = model.to(self.device)
+            self.optimizer = AdamW(params=self.model.parameters(), lr=5e-6)
             torch.cuda.empty_cache()
 
     @staticmethod
