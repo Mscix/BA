@@ -58,8 +58,11 @@ class Trainer:
             else:
                 print(str(self.current_accuracy) + ' > ' + str(self.evaluator.metrics_results['accuracy']))
                 torch.cuda.empty_cache()
+                # Set back
+                self.current_accuracy = 0
                 return
             epoch += 1
+
 
     def reset_model(self):
         if self.resetting_model:
