@@ -71,7 +71,8 @@ class Main:
             'Sampling Method': sampling_method,
             'Init Sample Size': init_sample_size,
             'N-Sample': n_sample_size,
-            'Reset Model': resetting_model
+            'Reset Model': resetting_model,
+            'AL Iterations': al_iterations
         }
 
     def run(self):
@@ -92,6 +93,7 @@ class Main:
         with wandb.init(project='active-learning-plus', config=hyperparameters):
             init_sample_size = hyperparameters['Init Sample Size']
             sample_size = hyperparameters['N-Sample']
+            al_iterations = hyperparameters['AL Iterations']
             i = 0
             print('AL Iteration: 0')
             init_sample, self.data.partial = self.sampler.sample(self.data.partial, init_sample_size)
@@ -112,7 +114,7 @@ class Main:
 
             counter = 0
             # while True:
-            for i in range(5):
+            for i in range(al_iterations):
                 print(f'AL Iteration: {i+1}')
                 sample, self.data.partial = self.sampler.sample(data=self.data.partial,
                                                                 sample_size=sample_size,

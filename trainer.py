@@ -58,7 +58,6 @@ class Trainer:
             else:
                 print(str(self.current_accuracy) + ' > ' + str(self.evaluator.metrics_results['accuracy']))
                 torch.cuda.empty_cache()
-                # Set back
                 return
             epoch += 1
 
