@@ -126,13 +126,14 @@ class Main:
                 # --------------- AL PLUS --------------- #
                 train_dataloader = to_data_loader(train_set, self.device.type)
                 self.trainer.train(train_dataloader, self.data,  i+1)
-                if counter >= 3:
-                    return
-                if not self.trainer.current_accuracy > current_accuracy:
-                    counter += 1
-                else:
-                    current_accuracy = self.trainer.current_accuracy
-                    counter = 0
+
+                # if counter >= 3:
+                #    return
+                # if not self.trainer.current_accuracy > current_accuracy:
+                #    counter += 1
+                # else:
+                #    current_accuracy = self.trainer.current_accuracy
+                #    counter = 0
                 # i += 1
 
 

@@ -23,8 +23,8 @@ class Trainer:
         self.reset_model()
         self.model.train()
         epoch = 0
-        # while True:
-        for i in range(5):
+        while True:
+        # for i in range(5):
             # Loop through the batches
             for batch in train_dataloader:
                 # Get the batch
