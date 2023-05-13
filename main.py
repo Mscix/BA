@@ -111,7 +111,8 @@ class Main:
             current_accuracy = self.trainer.current_accuracy
 
             counter = 0
-            while True:
+            # while True:
+            for i in range(5):
                 print(f'AL Iteration: {i+1}')
                 sample, self.data.partial = self.sampler.sample(data=self.data.partial,
                                                                 sample_size=sample_size,
@@ -132,7 +133,7 @@ class Main:
                 else:
                     current_accuracy = self.trainer.current_accuracy
                     counter = 0
-                i += 1
+                # i += 1
 
 
 if __name__ == "__main__":
