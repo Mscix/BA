@@ -26,7 +26,7 @@ class Trainer:
         self.model.train()
         epoch = 0
         # while True:
-        for i in range(5):
+        for i in range(3):
             # Loop through the batches
             for batch in train_dataloader:
                 # Get the batch
