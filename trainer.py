@@ -51,6 +51,8 @@ class Trainer:
                 "Strong Labels": len(data.labelled)
             }
             self.evaluator.eval(self.model, eval_obj)
+            self.current_accuracy = self.evaluator.metrics_results['accuracy']
+            print(str(self.current_accuracy))
             """
             # Stops if accuracy got worse and returns model from the iteration before
             if self.current_accuracy <= self.evaluator.metrics_results['accuracy']:
