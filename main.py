@@ -11,6 +11,7 @@ import pandas as pd
 import wandb
 # import plotter as p
 import argparse
+import copy
 
 
 class Main:
@@ -55,7 +56,8 @@ class Main:
 
         self.eval_dataloader = to_data_loader(self.data.eval_data, self.device.type)
         self.evaluator = Evaluator(self.device, self.eval_dataloader)
-        self.trainer = Trainer(self.model, self.device, self.evaluator, resetting_model)
+        self.trainer = Trainer(self.model, self.device, self.evaluator, resetting_model,
+                               copy.deepcopy(self.model.state_dict()))
         self.sampler = Sampler(self.device)
         self.sampling_method = sampling_method
         self.mode = mode

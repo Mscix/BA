@@ -7,8 +7,9 @@ from preprocessor import Preprocessor
 from transformers import AutoModelForSequenceClassification
 
 
+
 class Trainer:
-    def __init__(self,  model, device, evaluator, resetting_model):
+    def __init__(self,  model, device, evaluator, resetting_model, initial_weights):
         self.model = model
         self.device = device
         self.optimizer = AdamW(params=self.model.parameters(), lr=5e-6)  # check if the optimizer ok like this
@@ -16,6 +17,7 @@ class Trainer:
         self.current_accuracy = 0
         self.evaluator = evaluator
         self.resetting_model = resetting_model
+        self.initial_weights = initial_weights
 
     def train(self, train_dataloader: DataLoader, data: Preprocessor, al_iteration=0):
         # need criterion?
@@ -67,6 +69,7 @@ class Trainer:
             self.model = self.model.to("cpu")
             torch.cuda.empty_cache()
             model = AutoModelForSequenceClassification.from_pretrained("bert-base-cased", num_labels=4)
+            model.load_state_dict(self.initial_weights)
             # Move the model and its tensors back to the GPU
             self.model = model.to(self.device)
             self.optimizer = AdamW(params=self.model.parameters(), lr=5e-6)
