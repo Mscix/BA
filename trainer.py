@@ -25,8 +25,8 @@ class Trainer:
         self.reset_model()
         self.model.train()
         epoch = 0
-        while True:
-        # for i in range(5):
+        # while True:
+        for i in range(5):
             # Loop through the batches
             for batch in train_dataloader:
                 # Get the batch
@@ -50,9 +50,8 @@ class Trainer:
                 'epoch': epoch,
                 "Strong Labels": len(data.labelled)
             }
-
             self.evaluator.eval(self.model, eval_obj)
-
+            """
             # Stops if accuracy got worse and returns model from the iteration before
             if self.current_accuracy <= self.evaluator.metrics_results['accuracy']:
                 print(str(self.current_accuracy) + ' <= ' + str(self.evaluator.metrics_results['accuracy']))
@@ -61,7 +60,9 @@ class Trainer:
                 print(str(self.current_accuracy) + ' > ' + str(self.evaluator.metrics_results['accuracy']))
                 torch.cuda.empty_cache()
                 return
+            """
             epoch += 1
+            torch.cuda.empty_cache()
 
 
     def reset_model(self):
