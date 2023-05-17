@@ -9,13 +9,14 @@ from transformers import AutoModelForSequenceClassification
 
 
 class Trainer:
-    def __init__(self,  model, device, evaluator, resetting_model, initial_weights):
+    def __init__(self,  model, device, v_eval, t_eval, resetting_model, initial_weights):
         self.model = model
         self.device = device
         self.optimizer = AdamW(params=self.model.parameters(), lr=5e-6)  # check if the optimizer ok like this
         self.al_iteration = 0
         self.current_accuracy = 0
-        self.evaluator = evaluator
+        self.v_eval = v_eval
+        self.t_eval = t_eval
         self.resetting_model = resetting_model
         self.initial_weights = initial_weights
 
@@ -24,9 +25,13 @@ class Trainer:
         wandb.watch(self.model, log='all', log_freq=10)
         self.reset_model()
         self.model.train()
+
+        # Set up training evaluator, as each iteration the train set changes
+
         epoch = 0
+        # TODO start meassuring training accuracy
         # while True:
-        for i in range(5):
+        for i in range(10):
             # Loop through the batches
             for batch in train_dataloader:
                 # Get the batch
@@ -50,8 +55,8 @@ class Trainer:
                 'epoch': epoch + i * 3,
                 "Strong Labels": len(data.labelled)
             }
-            self.evaluator.eval(self.model, eval_obj)
-            self.current_accuracy = self.evaluator.metrics_results['accuracy']
+            self.v_eval.eval(self.model, eval_obj)
+            self.current_accuracy = self.v_eval.metrics_results['accuracy']
             print(str(self.current_accuracy))
             """
             # Stops if accuracy got worse and returns model from the iteration before
