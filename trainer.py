@@ -9,14 +9,14 @@ from transformers import AutoModelForSequenceClassification
 
 
 class Trainer:
-    def __init__(self,  model, device, v_eval, t_eval, resetting_model, initial_weights):
+    def __init__(self,  model, device, v_eval, resetting_model, initial_weights):
         self.model = model
         self.device = device
         self.optimizer = AdamW(params=self.model.parameters(), lr=5e-6)  # check if the optimizer ok like this
         self.al_iteration = 0
         self.current_accuracy = 0
         self.v_eval = v_eval
-        self.t_eval = t_eval
+        # self.t_eval = t_eval
         self.resetting_model = resetting_model
         self.initial_weights = initial_weights
 
