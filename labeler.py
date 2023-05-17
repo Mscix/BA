@@ -78,9 +78,6 @@ class CustomLabeller(WeaklyLabeller):
 
         # Take subset of control df that has the matching indexes of to_label
         indices = to_label.index.tolist()
-        print(indices)
-        print(self.control_data.index.tolist())
-        print(f'LEN indices{len(indices)} self.control_data {len(self.control_data)}')
         control = self.control_data.loc[indices]
         _control = control.copy()
 
@@ -90,8 +87,6 @@ class CustomLabeller(WeaklyLabeller):
         false_labels = self.false_label(false_labels)
 
         result = pd.concat([correct_labels, false_labels])
-
-        print(f'Len: {len(_control)} and {len(result)}')
 
         # Will not work list length mismatch
         print(self.calc_error(result['Class Index'].sort_index().tolist(),
