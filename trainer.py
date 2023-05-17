@@ -47,7 +47,7 @@ class Trainer:
             print(f'Epoch {epoch}')
             eval_obj = {
                 "AL Iteration": al_iteration,
-                'epoch': epoch,
+                'epoch': epoch + i * 3,
                 "Strong Labels": len(data.labelled)
             }
             self.evaluator.eval(self.model, eval_obj)
