@@ -80,6 +80,8 @@ class Main:
     def run(self):
         if self.mode == 'Standard':
             self.standard_ml(self.hyperparameters)
+        elif self.mode == 'Dev':
+            self.test_weak_labeler()
         else:
             # Default
             self.al(self.hyperparameters)
@@ -140,6 +142,30 @@ class Main:
                 #    counter = 0
                 # i += 1
 
+    def test_weak_labeler(self):
+        w = CustomLabeller(0.25, self.data.control)
+        w2 = CustomLabeller(0.75, self.data.control)
+        w3 = CustomLabeller(0.25, self.data.control)
+        ones = self.data.control.copy()
+        ones['Class Index'] = 1
+        labelled_25 = w.label(self.data.control)
+        labelled_75 = w2.label(self.data.control)
+        labelled_ones = w3.label(ones)
+
+        print(labelled_25.sort_index().head(40))
+        print(labelled_75.sort_index().head(40))
+        print(labelled_ones.sort_index().head(40))
+
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process passed Hyperparameters.')
@@ -147,7 +173,7 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--path', type=str, help='Path to the csv file with the data set.',
                         default='/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/small_t.csv')
 
-    parser.add_argument('-m', '--mode', type=str, choices=['AL', 'AL+', 'ALI', 'Standard'], default='AL+',
+    parser.add_argument('-m', '--mode', type=str, choices=['AL', 'AL+', 'ALI', 'Standard', 'Dev'], default='AL+',
                         help='The Learning mode.')
 
     parser.add_argument('-sm', '--sampling_method', type=str, choices=['Random', 'EC', 'LC', 'MC', 'RC'],

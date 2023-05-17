@@ -56,7 +56,8 @@ class CustomLabeller(WeaklyLabeller):
         self.control_data = control_data
 
     def _label(self, to_label):
-        # Only works properly if Weakly Labeller called just once, otherwise just do with control data
+        # TODO this is a problem
+        # TODO this does not work... Only works properly if Weakly Labeller called just once, otherwise just do with control data
         # Adjust that it is not dependent on the correct initial labels...
         n = int(self.error_rate * len(to_label))
         print(len(to_label))
@@ -73,23 +74,36 @@ class CustomLabeller(WeaklyLabeller):
         return result
 
     def label(self, to_label):
-        # Should do:
-        # just relabel what it is to the same but 0.25 rate of error
-        print(f'Error rate: {self.error_rate}')
-        control = to_label.copy()
-        relabel, labels = Sampler.random_sampling(to_label, self.error_rate)
-        print(f'Actual error rate: {len(relabel) / len(to_label)}')
+        # Takes a subset of the control df by index, the control df is correctly labelled
 
-        false_labels = self.false_label(relabel)
-        result = pd.concat([labels, false_labels])
+        # Take subset of control df that has the matching indexes of to_label
+        indices = to_label.index.tolist()
+        print(indices)
+        print(self.control_data.index.tolist())
+        print(f'LEN indices{len(indices)} self.control_data {len(self.control_data)}')
+        control = self.control_data.loc[indices]
+        _control = control.copy()
+
+        # Check if samples correctly
+        false_labels, correct_labels = Sampler.random_sampling(control, self.error_rate)
+
+        false_labels = self.false_label(false_labels)
+
+        result = pd.concat([correct_labels, false_labels])
+
+        print(f'Len: {len(_control)} and {len(result)}')
+
+        # Will not work list length mismatch
         print(self.calc_error(result['Class Index'].sort_index().tolist(),
-                              control['Class Index'].sort_index().tolist()))
+                              _control['Class Index'].sort_index().tolist()))
+
         return result
 
 
 
     @staticmethod
     def false_label(to_label):
+        # Maybe not have to give control data and then false label
         operation = lambda x: random.choice([i for i in range(4) if i != x])  # Discuss
         to_label['Class Index'] = to_label.apply(lambda row: operation(row['Class Index']), axis=1)
         return to_label
