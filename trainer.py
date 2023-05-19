@@ -33,15 +33,10 @@ class Trainer:
         self.reset_model()
         self.model.train()
 
-        # Set up training evaluator, as each iteration the train set changes
-
+        # Set up training evaluator, as each iteration the train set changes?
         epoch = 0
-
-        # TODO start measuring training accuracy
-        # while self.early_stopping():
-
         # not 'while True:' just in case
-        while epoch < 100:
+        while epoch < 500:
             loss_accumulator = 0.0
             print(f'Epoch {epoch}')
             # Loop through the batches
@@ -86,7 +81,7 @@ class Trainer:
 
     def early_stopping(self, results):
         print('Measured Loss: ' + str(results['avg Validation Loss']) +
-                                      ', Current Best Loss: ' + str(self.best_val_loss))
+              ', Current Best Loss: ' + str(self.best_val_loss))
         # Lower loss obviously better
         if self.best_val_loss is None:
             self.best_val_loss = results['avg Validation Loss']
@@ -103,7 +98,8 @@ class Trainer:
                 self.model.load_state_dict(self.best_model.state_dict())
                 # Rest values
                 self.patience_counter = 0
-                # return True to stop the
+                self.best_val_loss = None
+                # return True to stop the loop
                 return True
         print(f'Current Patience {self.patience_counter}/{self.patience}')
         return False
