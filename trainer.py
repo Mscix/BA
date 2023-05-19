@@ -85,8 +85,8 @@ class Trainer:
             torch.cuda.empty_cache()
 
     def early_stopping(self, results):
-        print(f'Measured Loss: ' + str(results['avg Validation Loss'] +
-                                       ', Current Best Loss: ' + str(self.best_val_loss)))
+        print('Measured Loss: ' + str(results['avg Validation Loss'] +
+                                      ', Current Best Loss: ' + str(self.best_val_loss)))
         # Lower loss obviously better
         if self.best_val_loss is None:
             self.best_val_loss = results['avg Validation Loss']
