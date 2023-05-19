@@ -105,7 +105,6 @@ class Main:
             print('AL Iteration: 0')
             init_sample, self.data.partial = self.sampler.sample(self.data.partial, init_sample_size)
             self.data.labelled = self.strong_labeler.label(init_sample)
-            print(self.data.labelled.head(5))
 
             # --------------- AL PLUS --------------- #
             if self.mode == 'AL+' or self.mode == 'ALI':
@@ -126,7 +125,6 @@ class Main:
                                                                 model=self.trainer.model
                                                                 )
                 self.data.labelled = pd.concat([self.data.labelled, self.strong_labeler.label(sample)])
-                print(self.data.labelled.head(5))
                 # --------------- AL PLUS --------------- #
                 if self.mode == 'AL+':
                     train_set = pd.concat([self.data.labelled, self.data.partial])
