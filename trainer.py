@@ -68,10 +68,9 @@ class Trainer:
             results['avg Training Loss'] = loss_accumulator / len(train_dataloader)
             wandb.log(results)
             epoch += 1
-            torch.cuda.empty_cache()
-
             if self.early_stopping(results):
                 return
+            torch.cuda.empty_cache()
 
     def reset_model(self):
         if self.resetting_model:
@@ -86,6 +85,8 @@ class Trainer:
             torch.cuda.empty_cache()
 
     def early_stopping(self, results):
+        print(f'Measured Loss: ' + str(results['avg Validation Loss'] +
+                                       ', Current Best Loss: ' + str(self.best_val_loss)))
         # Lower loss obviously better
         if self.best_val_loss is None:
             self.best_val_loss = results['avg Validation Loss']
