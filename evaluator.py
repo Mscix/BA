@@ -27,11 +27,11 @@ class Evaluator:
 
         self.eval_dataloader = eval_dataloader
 
-        self.metrics_results = {}
+        self.evaluation_results = {}
 
-    def eval(self, model, eval_obj):
+    def eval(self, model):
         model.eval()
-
+        loss_accumulator = 0.0
         for batch in self.eval_dataloader:
             # Get the batch
             batch = {k: v.to(self.device) for k, v in batch.items()}
@@ -39,6 +39,8 @@ class Evaluator:
             with torch.no_grad():
                 # Compute the model output
                 outputs = model(**batch)
+
+            loss_accumulator += outputs.loss.item()
             # Get the logits
             logits = outputs.logits
             # Append the logits batch to the list
@@ -58,15 +60,14 @@ class Evaluator:
         # Compute the metrics
         # zero_division=0, If there is no predicted Label for some class the score will be set to 0
         # This should only be a problem if the data set is small
-        self.metrics_results = {
+        self.evaluation_results = {
             **self.accuracy.compute(),
             **self.recall.compute(average='macro', zero_division=0),
             **self.precision.compute(average='macro', zero_division=0),
             **self.f1.compute(average='macro'),
-            **eval_obj
+            'avg Validation Loss': loss_accumulator / len(self.eval_dataloader)
         }
-        wandb.log(self.metrics_results)
-
+        return self.evaluation_results
 
     def get_predictions(self):
         return self.predictions_all

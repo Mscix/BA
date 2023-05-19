@@ -5,20 +5,27 @@ from torch.optim import AdamW
 from torch.utils.data import DataLoader
 from preprocessor import Preprocessor
 from transformers import AutoModelForSequenceClassification
-
+import copy
 
 
 class Trainer:
-    def __init__(self,  model, device, v_eval, resetting_model, initial_weights):
+    def __init__(self,  model, device, v_eval, resetting_model, initial_weights, patience=3):
         self.model = model
         self.device = device
         self.optimizer = AdamW(params=self.model.parameters(), lr=5e-6)  # check if the optimizer ok like this
         self.al_iteration = 0
-        self.current_accuracy = 0
+        self.best_val_loss = None
+        self.best_model = None
         self.v_eval = v_eval
+        self.delta = 0
         # self.t_eval = t_eval
         self.resetting_model = resetting_model
         self.initial_weights = initial_weights
+        self.patience = patience
+        self.patience_counter = 0
+        # Deep copy the model to use as temporary storage model for early stopping
+        # Do not place on GPU otherwise there will be storage problems
+        self.best_model = copy.deepcopy(self.model)
 
     def train(self, train_dataloader: DataLoader, data: Preprocessor, al_iteration=0):
         # need criterion?
@@ -29,9 +36,14 @@ class Trainer:
         # Set up training evaluator, as each iteration the train set changes
 
         epoch = 0
-        # TODO start meassuring training accuracy
-        # while True:
-        for i in range(10):
+
+        # TODO start measuring training accuracy
+        # while self.early_stopping():
+
+        # not 'while True:' just in case
+        while epoch < 100:
+            loss_accumulator = 0.0
+            print(f'Epoch {epoch}')
             # Loop through the batches
             for batch in train_dataloader:
                 # Get the batch
@@ -40,6 +52,8 @@ class Trainer:
                 outputs = self.model(**batch)
                 # Loss computed by the model
                 loss = outputs.loss
+
+                loss_accumulator += loss.item()
                 # backpropagates the error to calculate gradients
                 loss.backward()
                 # Update the model weights
@@ -47,30 +61,17 @@ class Trainer:
                 # Clear the gradients
                 self.optimizer.zero_grad()
 
-                self.log_training(al_iteration, loss, epoch, len(data.labelled))
-
-            print(f'Epoch {epoch}')
-            eval_obj = {
-                "AL Iteration": al_iteration,
-                'epoch': epoch + i * 3,
-                "Strong Labels": len(data.labelled)
-            }
-            self.v_eval.eval(self.model, eval_obj)
-            self.current_accuracy = self.v_eval.metrics_results['accuracy']
-            print(str(self.current_accuracy))
-            """
-            # Stops if accuracy got worse and returns model from the iteration before
-            if self.current_accuracy <= self.evaluator.metrics_results['accuracy']:
-                print(str(self.current_accuracy) + ' <= ' + str(self.evaluator.metrics_results['accuracy']))
-                self.current_accuracy = self.evaluator.metrics_results['accuracy']
-            else:
-                print(str(self.current_accuracy) + ' > ' + str(self.evaluator.metrics_results['accuracy']))
-                torch.cuda.empty_cache()
-                return
-            """
+            results = self.v_eval.eval(self.model)
+            results['AL Iteration'] = al_iteration
+            results['epoch'] = epoch
+            results['Strong Labels'] = len(data.labelled)
+            results['avg Training Loss'] = loss_accumulator / len(train_dataloader)
+            wandb.log(results)
             epoch += 1
             torch.cuda.empty_cache()
 
+            if self.early_stopping(results):
+                return
 
     def reset_model(self):
         if self.resetting_model:
@@ -81,9 +82,28 @@ class Trainer:
             # Move the model and its tensors back to the GPU
             self.model = model.to(self.device)
             self.optimizer = AdamW(params=self.model.parameters(), lr=5e-6)
-            self.current_accuracy = 0
+            # self.current_accuracy = 0
             torch.cuda.empty_cache()
 
-    @staticmethod
-    def log_training(al_iteration, loss, epoch, strong_labels):
-        wandb.log({"AL Iteration": al_iteration, "epoch": epoch, "loss": loss, "Strong Labels": strong_labels})
+    def early_stopping(self, results):
+        # Lower loss obviously better
+        if self.best_val_loss is None:
+            self.best_val_loss = results['avg Validation Loss']
+        elif self.best_val_loss - results['avg Validation Loss'] > self.delta:
+            self.best_val_loss = results['avg Validation Loss']
+            self.patience_counter = 0
+            # Loads the current state of self.model into self.best_model as the loss is bette
+            self.best_model.load_state_dict(self.model.state_dict())
+        elif self.best_val_loss - results['avg Validation Loss'] < self.delta:
+            self.patience_counter += 1
+            if self.patience_counter >= self.patience:
+                print(f'Early stopping {self.patience_counter}')
+                # Loads the best state into current model
+                self.model.load_state_dict(self.best_model.state_dict())
+                # Rest values
+                self.patience_counter = 0
+                # return True to stop the
+                return True
+        print(f'Current Patience {self.patience_counter}/{self.patience}')
+        return False
+

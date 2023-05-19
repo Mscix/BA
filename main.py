@@ -24,7 +24,9 @@ class Main:
                  al_iterations=3,
                  init_sample_size=0.05,
                  n_sample_size=0.01,
-                 resetting_model=False):
+                 resetting_model=False,
+                 patience=3
+                 ):
 
         # Load model
         model_name = "bert-base-cased"
@@ -57,7 +59,7 @@ class Main:
         self.eval_dataloader = to_data_loader(self.data.eval_data, self.device.type)
         self.evaluator = Evaluator(self.device, self.eval_dataloader)
         self.trainer = Trainer(self.model, self.device, self.evaluator, resetting_model,
-                               copy.deepcopy(self.model.state_dict()))
+                               copy.deepcopy(self.model.state_dict()), patience)
         self.sampler = Sampler(self.device)
         self.sampling_method = sampling_method
         self.mode = mode
@@ -74,7 +76,8 @@ class Main:
             'Init Sample Size': init_sample_size,
             'N-Sample': n_sample_size,
             'Reset Model': resetting_model,
-            'AL Iterations': al_iterations
+            'AL Iterations': al_iterations,
+            'Patience': patience
         }
 
     def run(self):
@@ -102,6 +105,7 @@ class Main:
             print('AL Iteration: 0')
             init_sample, self.data.partial = self.sampler.sample(self.data.partial, init_sample_size)
             self.data.labelled = self.strong_labeler.label(init_sample)
+            print(self.data.labelled.head(5))
 
             # --------------- AL PLUS --------------- #
             if self.mode == 'AL+' or self.mode == 'ALI':
@@ -114,10 +118,6 @@ class Main:
             train_dataloader = to_data_loader(train_set, self.device.type)
             self.trainer.train(train_dataloader, self.data, 0)
 
-            current_accuracy = self.trainer.current_accuracy
-
-            counter = 0
-            # while True:
             for i in range(al_iterations):
                 print(f'AL Iteration: {i+1}')
                 sample, self.data.partial = self.sampler.sample(data=self.data.partial,
@@ -126,21 +126,15 @@ class Main:
                                                                 model=self.trainer.model
                                                                 )
                 self.data.labelled = pd.concat([self.data.labelled, self.strong_labeler.label(sample)])
+                print(self.data.labelled.head(5))
                 # --------------- AL PLUS --------------- #
-                train_set = pd.concat([self.data.labelled, self.data.partial]) if self.mode == 'AL+' else \
-                    self.data.labelled
+                if self.mode == 'AL+':
+                    train_set = pd.concat([self.data.labelled, self.data.partial])
+                else:
+                    train_set = self.data.labelled
                 # --------------- AL PLUS --------------- #
                 train_dataloader = to_data_loader(train_set, self.device.type)
                 self.trainer.train(train_dataloader, self.data,  i+1)
-
-                # if counter >= 3:
-                #    return
-                # if not self.trainer.current_accuracy > current_accuracy:
-                #    counter += 1
-                # else:
-                #    current_accuracy = self.trainer.current_accuracy
-                #    counter = 0
-                # i += 1
 
     def test_weak_labeler(self):
         w = CustomLabeller(0.25, self.data.control)
@@ -196,6 +190,8 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--resetting_model', type=bool, default=False,
                         help='Should the model be reset for each training?')
 
+    parser.add_argument('-pat', '--patience', type=int, default=3, help='This the tolerance parameter for Early stopping.')
+
     args = parser.parse_args()
 
     data_path = args.path
@@ -213,6 +209,7 @@ if __name__ == "__main__":
     _al_iterations = args.al_iterations
     _weakly_error = args.weakly_error
     _resetting_model = args.resetting_model
+    _patience = args.patience
 
     m = Main(data_path,
              pipeline_mode,
@@ -222,7 +219,8 @@ if __name__ == "__main__":
              al_iterations=_al_iterations,
              n_sample_size=_n_sample_size,
              init_sample_size=_init_sample_size,
-             resetting_model=_resetting_model
+             resetting_model=_resetting_model,
+             patience=_patience
              )
     m.run()
 
