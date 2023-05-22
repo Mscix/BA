@@ -114,4 +114,6 @@ class Trainer:
         self.al_results['*f1'] = results['f1']
         self.al_results['*precision'] = results['precision']
         self.al_results['*recall'] = results['recall']
+        self.al_results['AL Iteration'] = results['AL Iteration']
+        self.al_results['Strong Labels'] = results['Strong Labels']
 
