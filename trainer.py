@@ -26,6 +26,7 @@ class Trainer:
         # Deep copy the model to use as temporary storage model for early stopping
         # Do not place on GPU otherwise there will be storage problems
         self.best_model = copy.deepcopy(self.model)
+        self.al_results = {}
 
     def train(self, train_dataloader: DataLoader, data: Preprocessor, al_iteration=0):
         # need criterion?
@@ -55,15 +56,17 @@ class Trainer:
                 self.optimizer.step()
                 # Clear the gradients
                 self.optimizer.zero_grad()
-
+            # LOG best accuracy for this AL Iteration
+            # For every AL iteration log new 'Run'
+            # Log for both layers AL and epoch layer
             results = self.v_eval.eval(self.model)
             results['AL Iteration'] = al_iteration
-            results['epoch'] = epoch
             results['Strong Labels'] = len(data.labelled)
             results['avg Training Loss'] = loss_accumulator / len(train_dataloader)
-            wandb.log(results)
+            wandb.log(results, step='epoch')
             epoch += 1
             if self.early_stopping(results):
+                wandb.log(self.al_results, step='epoch')
                 return
             torch.cuda.empty_cache()
 
@@ -84,9 +87,10 @@ class Trainer:
               ', Current Best Loss: ' + str(self.best_val_loss))
         # Lower loss obviously better
         if self.best_val_loss is None:
-            self.best_val_loss = results['avg Validation Loss']
+            # self.best_val_loss = results['avg Validation Loss']
+            self.set_metrics(results)
         elif self.best_val_loss - results['avg Validation Loss'] > self.delta:
-            self.best_val_loss = results['avg Validation Loss']
+            self.set_metrics(results)
             self.patience_counter = 0
             # Loads the current state of self.model into self.best_model as the loss is bette
             self.best_model.load_state_dict(self.model.state_dict())
@@ -103,4 +107,11 @@ class Trainer:
                 return True
         print(f'Current Patience {self.patience_counter}/{self.patience}')
         return False
+
+    def set_metrics(self, results):
+        self.al_results['*avg Validation Loss'] = self.best_val_loss = results['avg Validation Loss']
+        self.al_results['*Accuracy'] = results['Accuracy']
+        self.al_results['*f1'] = results['f1']
+        self.al_results['*Precision'] = results['Precision']
+        self.al_results['*Recall'] = results['Recall']
 

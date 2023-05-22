@@ -81,8 +81,8 @@ class Preprocessor:
         df['token_type_ids'] = df['token_type_ids'].apply(literal_eval)
         self.control = df
         self.df = df
-        # Split Training set 80%, Test set 10%, Validation set 10% (Only Two split)
-        self.train_data = df.sample(frac=0.8, random_state=42)
+        # Split Training set 80%,  Validation set 20% (Only Two split)
+        self.train_data = df.sample(frac=0.8)
         self.eval_data = df.drop(self.train_data.index)
 
         # Load Tokenizer from a Bert model
