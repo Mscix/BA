@@ -63,10 +63,10 @@ class Trainer:
             results['AL Iteration'] = al_iteration
             results['Strong Labels'] = len(data.labelled)
             results['avg Training Loss'] = loss_accumulator / len(train_dataloader)
-            wandb.log(results, step='epoch')
+            wandb.log(results)
             epoch += 1
             if self.early_stopping(results):
-                wandb.log(self.al_results, step='epoch')
+                wandb.log(self.al_results)
                 return
             torch.cuda.empty_cache()
 
