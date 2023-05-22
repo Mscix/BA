@@ -110,8 +110,8 @@ class Trainer:
 
     def set_metrics(self, results):
         self.al_results['*avg Validation Loss'] = self.best_val_loss = results['avg Validation Loss']
-        self.al_results['*Accuracy'] = results['Accuracy']
+        self.al_results['*accuracy'] = results['accuracy']
         self.al_results['*f1'] = results['f1']
-        self.al_results['*Precision'] = results['Precision']
-        self.al_results['*Recall'] = results['Recall']
+        self.al_results['*precision'] = results['precision']
+        self.al_results['*recall'] = results['recall']
 
