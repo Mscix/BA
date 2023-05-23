@@ -22,8 +22,11 @@ def to_data_loader(df, device):
         # batch_size = 256
         # batch_size = 128
         batch_size = 64
+    elif device == 'prediction':
+        batch_size = 1
     else:
         batch_size = 2
+
     data = DataLoader(dataset=data, batch_size=batch_size)
 
     if device == 'cuda':

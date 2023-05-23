@@ -44,8 +44,9 @@ class Sampler:
         # if sample_size is a float converts it to an absolute n
         if isinstance(sample_size, float) and sample_size < 1:
             sample_size = math.floor(len(data) * sample_size)
+            print(f'Converted Sample Size: {sample_size}')
 
-        input_data = to_data_loader(data, self.device.type)
+        input_data = to_data_loader(data, 'prediction')
         # TODO rename, those are not always predictions
         predictions = self.get_predictions(input_data, model, method)
 
@@ -76,6 +77,7 @@ class Sampler:
         # sorts
         # use different sorting method?
         result = sorted(zipped, reverse=reverse, key=lambda x: x[1])
+
         indices_to_label = [x[0] for x in result[-sample_size:]]
 
         to_label = data[data.index.isin(indices_to_label)]
