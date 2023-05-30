@@ -83,8 +83,9 @@ class Sampler:
         # sorts
         # use different sorting method?
         result = sorted(zipped, reverse=True, key=lambda x: x[1])
-
+        print(result)
         indices_to_label = [x[0] for x in result[:sample_size]]
+        print(indices_to_label)
 
         to_label = data[data.index.isin(indices_to_label)]
         remaining = data.drop(indices_to_label)
