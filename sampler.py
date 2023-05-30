@@ -55,7 +55,7 @@ class Sampler:
 
         uncertainty_values = self.get_predictions(input_data, model, method)
 
-        to_label, remaining = self.sample_by_value(data, sample_size, uncertainty_values)
+        to_label, remaining = self.sample_by_value_py(data, sample_size, uncertainty_values)
 
         return to_label, remaining
 
@@ -77,7 +77,7 @@ class Sampler:
         return np.array(uncertainty_values)
 
     @staticmethod
-    def _sample_by_value(data, sample_size, values, reverse):
+    def sample_by_value_py(data, sample_size, values, reverse):
         # This method work on lists
         zipped = zip(data.index.tolist(), values)
         # sorts
@@ -92,7 +92,7 @@ class Sampler:
         return to_label, remaining
 
     @staticmethod
-    def sample_by_value(data, n, values):
+    def sample_by_value_np(data, n, values):
         # This method works on np arrays
 
         # Get the indices of the given data
