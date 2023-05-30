@@ -55,7 +55,7 @@ class Sampler:
 
         uncertainty_values = self.get_predictions(input_data, model, method)
 
-        to_label, remaining = self.sample_by_value_py(data, sample_size, uncertainty_values)
+        to_label, remaining = self.sample_by_value_np(data, sample_size, uncertainty_values)
 
         return to_label, remaining
 
@@ -71,7 +71,7 @@ class Sampler:
                 output = model(**batch)
             probabilities = output.logits
             probabilities = probabilities.softmax(dim=1)
-            value = f(probabilities.numpy())
+            value = f(probabilities)
             uncertainty_values.append(value)
         model.train()
         return np.array(uncertainty_values)
@@ -117,10 +117,11 @@ class Sampler:
     def entropy(probs):
         # Something wrong here
         #  Entropy for predictions for all classes
-        # return -torch.sum(probs * torch.log2(probs)) / probs.size(dim=0)
-        inner = probs * np.log2(probs)
-        numerator = 0 - np.sum(inner)
-        denominator = np.log2(probs.size)
+        probs = torch.tensor(probs, device=probs.device) if not torch.is_tensor(probs) else probs
+
+        inner = probs * torch.log2(probs)
+        numerator = 0 - torch.sum(inner)
+        denominator = torch.log2(torch.tensor(probs.numel(), dtype=torch.float, device=probs.device))
         return numerator / denominator
 
     @staticmethod
