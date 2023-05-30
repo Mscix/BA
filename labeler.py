@@ -55,24 +55,6 @@ class CustomLabeller(WeaklyLabeller):
         self.error_rate = error_rate  # What type error_rate
         self.control_data = control_data
 
-    def _label(self, to_label):
-        # TODO this is a problem
-        # TODO this does not work... Only works properly if Weakly Labeller called just once, otherwise just do with control data
-        # Adjust that it is not dependent on the correct initial labels...
-        n = int(self.error_rate * len(to_label))
-        print(len(to_label))
-        control = to_label.copy()
-        re_label = to_label.sample(n=n, replace=False)
-        false_labels = self.false_label(re_label)
-        result = pd.concat([to_label, false_labels])
-        print(f'LEN control{len(control)}')
-        print(f'LEN relable{len(re_label)}')
-        print(f'LEN result{len(result)}')
-
-        print(self.calc_error(result['Class Index'].sort_index().tolist(),
-                              control['Class Index'].sort_index().tolist()))
-        return result
-
     def label(self, to_label):
         # Takes a subset of the control df by index, the control df is correctly labelled
 
@@ -88,9 +70,8 @@ class CustomLabeller(WeaklyLabeller):
 
         result = pd.concat([correct_labels, false_labels])
 
-        # Will not work list length mismatch
-        print(self.calc_error(result['Class Index'].sort_index().tolist(),
-                              _control['Class Index'].sort_index().tolist()))
+        # print(self.calc_error(result['Class Index'].sort_index().tolist(),
+        #                      _control['Class Index'].sort_index().tolist()))
 
         return result
 

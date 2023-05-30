@@ -21,13 +21,11 @@ def to_data_loader(df, device):
     if device == 'cuda':
         # batch_size = 256
         # batch_size = 128
-        batch_size = 64
+        data = DataLoader(dataset=data, batch_size=64)
     elif device == 'prediction':
-        batch_size = 1
+        data = DataLoader(dataset=data, batch_size=1, shuffle=False)
     else:
-        batch_size = 2
-
-    data = DataLoader(dataset=data, batch_size=batch_size)
+        data = DataLoader(dataset=data, batch_size=2)
 
     if device == 'cuda':
         for batch_id, sample in enumerate(data):
