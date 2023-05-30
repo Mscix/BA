@@ -74,7 +74,7 @@ class Sampler:
             value = f(probabilities)
             uncertainty_values.append(value)
         model.train()
-        return np.array(uncertainty_values)
+        return uncertainty_values
 
     @staticmethod
     def sample_by_value_py(data, sample_size, values):
