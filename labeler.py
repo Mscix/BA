@@ -64,7 +64,7 @@ class CustomLabeller(WeaklyLabeller):
         _control = control.copy()
 
         # Check if samples correctly
-        false_labels, correct_labels = Sampler.random_sampling(control, self.error_rate)
+        false_labels, correct_labels, _ = Sampler.random_sampling(control, self.error_rate)
 
         false_labels = self.false_label(false_labels)
 

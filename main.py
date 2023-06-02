@@ -12,6 +12,7 @@ import wandb
 # import plotter as p
 import argparse
 import copy
+import warnings
 
 
 class Main:
@@ -25,7 +26,8 @@ class Main:
                  init_sample_size=0.05,
                  n_sample_size=0.01,
                  resetting_model=False,
-                 patience=3
+                 patience=3,
+                 delta=0
                  ):
 
         # Load model
@@ -60,7 +62,7 @@ class Main:
         self.evaluator = Evaluator(self.device, self.eval_dataloader)
         self.trainer = Trainer(self.model, self.device, self.evaluator, resetting_model,
                                copy.deepcopy(self.model.state_dict()), patience)
-        self.sampler = Sampler(self.device)
+        self.sampler = Sampler(self.device, delta=delta)
         self.sampling_method = sampling_method
         self.mode = mode
         self.weakly_error = weakly_error
@@ -103,12 +105,13 @@ class Main:
             al_iterations = hyperparameters['AL Iterations']
             i = 0
             print('AL Iteration: 0')
-            init_sample, self.data.partial = self.sampler.sample(self.data.partial, init_sample_size)
+            init_sample, self.data.partial, _ = self.sampler.sample(self.data.partial, init_sample_size)
             self.data.labelled = self.strong_labeler.label(init_sample)
 
             # --------------- AL PLUS --------------- #
             if self.mode == 'AL+' or self.mode == 'ALI':
                 # self.weak_labeler = KMeansLabeller(self.data, self.fixed_centroids)
+                # Initially trains on all Samples
                 self.data.partial = self.weak_labeler.label(self.data.partial)
                 train_set = pd.concat([self.data.labelled, self.data.partial])
             else:
@@ -118,21 +121,25 @@ class Main:
             self.trainer.train(train_dataloader, self.data, 0)
 
             for i in range(al_iterations):
-                print(f'AL Iteration: {i+1}')
-                sample, self.data.partial = self.sampler.sample(data=self.data.partial,
-                                                                sample_size=sample_size,
-                                                                sampling_method=self.sampling_method,
-                                                                model=self.trainer.model
-                                                                )
+                print(f'AL Iteration: {i + 1}')
+                # Here should be split into 3 groups
+                sample, self.data.partial, pseudo_labels = self.sampler.sample(data=self.data.partial,
+                                                                               sample_size=sample_size,
+                                                                               sampling_method=self.sampling_method,
+                                                                               model=self.trainer.model
+                                                                               )
                 self.data.labelled = pd.concat([self.data.labelled, self.strong_labeler.label(sample)])
                 # --------------- AL PLUS --------------- #
                 if self.mode == 'AL+':
-                    train_set = pd.concat([self.data.labelled, self.data.partial])
+                    # Here has to choose with the help of confidence
+                    # train_set = pd.concat([self.data.labelled, self.data.partial])
+                    train_set = pd.concat([self.data.labelled, pseudo_labels])
+
                 else:
                     train_set = self.data.labelled
                 # --------------- AL PLUS --------------- #
                 train_dataloader = to_data_loader(train_set, self.device.type)
-                self.trainer.train(train_dataloader, self.data,  i+1)
+                self.trainer.train(train_dataloader, self.data, i + 1)
 
     def test_weak_labeler(self):
         w = CustomLabeller(0.25, self.data.control)
@@ -147,16 +154,6 @@ class Main:
         print(labelled_25.sort_index().head(40))
         print(labelled_75.sort_index().head(40))
         print(labelled_ones.sort_index().head(40))
-
-
-
-
-
-
-
-
-
-
 
 
 if __name__ == "__main__":
@@ -188,7 +185,11 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--resetting_model', type=bool, default=False,
                         help='Should the model be reset for each training?')
 
-    parser.add_argument('-pat', '--patience', type=int, default=3, help='This the tolerance parameter for Early stopping.')
+    parser.add_argument('-pat', '--patience', type=int, default=3,
+                        help='This the tolerance parameter for Early stopping.')
+
+    parser.add_argument('-d', '--delta', type=float, default=0,
+                        help='Confidence from which the pseudo labels are accepted as Pseudo Labels.')
 
     args = parser.parse_args()
 
@@ -208,6 +209,7 @@ if __name__ == "__main__":
     _weakly_error = args.weakly_error
     _resetting_model = args.resetting_model
     _patience = args.patience
+    _delta = args.delta
 
     m = Main(data_path,
              pipeline_mode,
@@ -218,7 +220,7 @@ if __name__ == "__main__":
              n_sample_size=_n_sample_size,
              init_sample_size=_init_sample_size,
              resetting_model=_resetting_model,
-             patience=_patience
+             patience=_patience,
+             delta=_delta
              )
     m.run()
-

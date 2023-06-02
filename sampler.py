@@ -6,14 +6,16 @@ import numpy as np
 
 class Sampler:
 
-    def __init__(self, device):
+    def __init__(self, device, delta=0):
         self.device = device
+        # delta is the confidence from which the instances are accepted as pseudo labels
+        # because only the uncertainty is calculated transform; 1 - confidence = uncertainty
+        self.u_cap = 1 - delta
 
     def sample(self, data, sample_size, sampling_method='Random', model=None):
         # result: (remaining, sampled)
         if sampling_method == 'Random':
             result = self.random_sampling(data, sample_size)
-
         # For Uncertainty sampling: the splicing happens from the back care
         elif sampling_method == 'EC':
             # Get the ones with the highest entropy => ascending
@@ -38,8 +40,8 @@ class Sampler:
             sample_size = sample_size / len(data)
         sampled = data.sample(frac=sample_size, random_state=42)
         remaining = data.drop(sampled.index)
-        # sampled, remaining = data.train_test_split(test_size=sample_size, seed=42)
-        return sampled, remaining
+        # remaining is returned twice the third return value is for pseudo labels
+        return sampled, remaining, remaining
 
     def uncertainty_sampling(self, data, sample_size, model, method):
         # if sample_size is a float converts it to an absolute n
@@ -47,17 +49,13 @@ class Sampler:
             sample_size = math.floor(len(data) * sample_size)
             print(f'Converted Sample Size: {sample_size}')
 
-        # print('DATA')
-        # print(data.head())
         input_data = to_data_loader(data, 'prediction')
-        # print('BATCH')
-        # print(next(iter(input_data)))
 
         uncertainty_values = self.get_predictions(input_data, model, method)
 
-        to_label, remaining = self.sample_by_value_py(data, sample_size, uncertainty_values)
+        to_label, remaining, pseudo_labels = self.sample_by_value_py(data, sample_size, uncertainty_values)
 
-        return to_label, remaining
+        return to_label, remaining, pseudo_labels
 
     def get_predictions(self, data, model, f):
         model.eval()
@@ -76,21 +74,25 @@ class Sampler:
         model.train()
         return uncertainty_values
 
-    @staticmethod
-    def sample_by_value_py(data, sample_size, values):
-        # This method work on lists
+    def sample_by_value_py(self, data, sample_size, values):
+        # TODO: pycharm profiler
+        # This method works on lists
+
         zipped = zip(data.index.tolist(), values)
-        # sorts
-        # use different sorting method?
+
         result = sorted(zipped, reverse=True, key=lambda x: x[1])
         print(result)
-        indices_to_label = [x[0] for x in result[:sample_size]]
-        print(indices_to_label)
+        # Get indices to keep track of data
+        indices_to_label_i = [x[0] for x in result[:sample_size]]
+        print(indices_to_label_i)
 
-        to_label = data[data.index.isin(indices_to_label)]
-        remaining = data.drop(indices_to_label)
+        pseudo_labels_i = [x[0] for x in result[sample_size:] if x[1].item() < self.u_cap]
+        print(pseudo_labels_i)
+        to_label = data[data.index.isin(indices_to_label_i)]
+        pseudo_labels = data[data.index.isin(pseudo_labels_i)]
 
-        return to_label, remaining
+        remaining = data.drop(indices_to_label_i)
+        return to_label, remaining, pseudo_labels
 
     @staticmethod
     def sample_by_value_np(data, n, values):
@@ -111,7 +113,7 @@ class Sampler:
         # Return both
         return to_label, remaining
 
-    # Following sampling techniques are Adapted from:
+    # Following sampling methods are Adapted from:
     # Munro, R. (2021). Human in the Loop: Machine Learning and AI for Human-Centered Design. O'Reilly Media.
     # The results are in the range of [0,1] and 1 means most uncertain
     @staticmethod
