@@ -27,6 +27,7 @@ class Trainer:
         # Do not place on GPU otherwise there will be storage problems
         self.best_model = copy.deepcopy(self.model)
         self.al_results = {}
+        self.epoch = 0
 
     def train(self, train_dataloader: DataLoader, data: Preprocessor, al_iteration=0):
         # need criterion?
@@ -56,6 +57,9 @@ class Trainer:
                 self.optimizer.step()
                 # Clear the gradients
                 self.optimizer.zero_grad()
+
+                # Logs every batch
+                # wandb.log()
             # LOG best accuracy for this AL Iteration
             # For every AL iteration log new 'Run'
             # Log for both layers AL and epoch layer
@@ -63,8 +67,12 @@ class Trainer:
             results['AL Iteration'] = al_iteration
             results['Strong Labels'] = len(data.labelled)
             results['avg Training Loss'] = loss_accumulator / len(train_dataloader)
+            results['epoch'] = self.epoch
             wandb.log(results)
             epoch += 1
+            self.epoch += 1
+
+
             if self.early_stopping(results):
                 wandb.log(self.al_results)
                 return

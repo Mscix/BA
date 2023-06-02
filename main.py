@@ -70,8 +70,7 @@ class Main:
         # pass the actual error rate also? because if insufficient data size
         self.hyperparameters = {
             'Mode': mode,
-            'Weak Labeler': weak_labeler,
-            'Weakly Error': weakly_error,
+            'Weakly Error': 0 if mode != 'AL+' else weakly_error,
             'Data Set': 'AG_NEWS',
             'Train Set': len(self.data.train_data),
             'Sampling Method': sampling_method,
@@ -79,7 +78,8 @@ class Main:
             'N-Sample': n_sample_size,
             'Reset Model': resetting_model,
             'AL Iterations': al_iterations,
-            'Patience': patience
+            'Patience': patience,
+            'P. Label Conf.': delta
         }
 
     def run(self):
