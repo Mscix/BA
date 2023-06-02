@@ -72,7 +72,6 @@ class Trainer:
             epoch += 1
             self.epoch += 1
 
-
             if self.early_stopping(results):
                 wandb.log(self.al_results)
                 return

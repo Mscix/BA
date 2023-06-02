@@ -113,6 +113,7 @@ class Main:
                 # self.weak_labeler = KMeansLabeller(self.data, self.fixed_centroids)
                 # Initially trains on all Samples
                 self.data.partial = self.weak_labeler.label(self.data.partial)
+                # should initial iteration be on partial or on only labelled?
                 train_set = pd.concat([self.data.labelled, self.data.partial])
             else:
                 train_set = self.data.labelled

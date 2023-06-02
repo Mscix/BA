@@ -10,7 +10,9 @@ class Sampler:
         self.device = device
         # delta is the confidence from which the instances are accepted as pseudo labels
         # because only the uncertainty is calculated transform; 1 - confidence = uncertainty
+        # u_cap: uncertainty cap
         self.u_cap = 1 - delta
+        self.dtype = np.dtype([('index', int), ('value', float)])
 
     def sample(self, data, sample_size, sampling_method='Random', model=None):
         # result: (remaining, sampled)
@@ -53,7 +55,7 @@ class Sampler:
 
         uncertainty_values = self.get_predictions(input_data, model, method)
 
-        to_label, remaining, pseudo_labels = self.sample_by_value_py(data, sample_size, uncertainty_values)
+        to_label, remaining, pseudo_labels = self.sample_by_value_2(data, sample_size, uncertainty_values)
 
         return to_label, remaining, pseudo_labels
 
@@ -91,6 +93,22 @@ class Sampler:
         to_label = data[data.index.isin(indices_to_label_i)]
         pseudo_labels = data[data.index.isin(pseudo_labels_i)]
 
+        remaining = data.drop(indices_to_label_i)
+        return to_label, remaining, pseudo_labels
+
+    def sample_by_value_2(self, data, sample_size, values):
+        zipped = list(zip(data.index.tolist(), [v.item() for v in values]))
+        np_zipped = np.array(zipped, dtype=self.dtype)
+
+        result = np.sort(np_zipped, order='value')  # sorts in ascending order
+        print(result)
+        indices_to_label_i = result[-sample_size:]['index']  # get last samples
+        print(indices_to_label_i)
+        pseudo_labels_i = result[result['value'] < self.u_cap]['index']  # get all indexes where values smaller u_cap
+        print(pseudo_labels_i)
+
+        to_label = data[data.index.isin(indices_to_label_i)]
+        pseudo_labels = data[data.index.isin(pseudo_labels_i)]
         remaining = data.drop(indices_to_label_i)
         return to_label, remaining, pseudo_labels
 
