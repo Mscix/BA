@@ -70,6 +70,7 @@ class Trainer:
             results['avg Training Loss'] = loss_accumulator / len(train_dataloader)
             results['epoch'] = self.epoch
             results['pseudo_labels_len'] = pseudo_labels_len
+            print(f'pseudo labels {pseudo_labels_len}')
             wandb.log(results)
             epoch += 1
             self.epoch += 1

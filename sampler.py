@@ -7,13 +7,14 @@ import pandas as pd
 
 class Sampler:
 
-    def __init__(self, device, delta=0):
+    def __init__(self, device, mode, delta=0):
         self.device = device
         # delta is the confidence from which the instances are accepted as pseudo labels
         # because only the uncertainty is calculated transform; 1 - confidence = uncertainty
         # u_cap: uncertainty cap
         self.u_cap = 1 - delta
         self.dtype = np.dtype([('index', int), ('value', float)])
+        self.mode = mode
 
     def sample(self, data, sample_size, sampling_method='Random', model=None):
         # result: (remaining, sampled)
@@ -109,10 +110,12 @@ class Sampler:
         mask_to_label = data.index.isin(indices_to_label_i)
         to_label = data[mask_to_label]
         remaining = data[~mask_to_label]
-        # Get the instances where values smaller u_cap
-        pseudo_labels_i = df_values[df_values['value'] < self.u_cap]['index'].tolist()
-        mask_pseudo_labels = remaining.index.isin(pseudo_labels_i)
-        pseudo_labels = remaining[mask_pseudo_labels]
+        pseudo_labels = []
+        if self.mode == 'AL+':
+            # Get the instances where values smaller u_cap
+            pseudo_labels_i = df_values[df_values['value'] < self.u_cap]['index'].tolist()
+            mask_pseudo_labels = remaining.index.isin(pseudo_labels_i)
+            pseudo_labels = remaining[mask_pseudo_labels]
         return to_label, remaining, pseudo_labels
 
     # Following sampling methods are Adapted from:
