@@ -42,7 +42,6 @@ class Trainer:
         while epoch < 500:
             loss_accumulator = 0.0
             # print(f'Epoch {epoch}')
-            # TODO correction do not load every time the stuff to the device as its repetetive..
             # Loop through the batches
             for batch in train_dataloader:
                 # Get the batch

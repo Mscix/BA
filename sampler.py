@@ -51,7 +51,7 @@ class Sampler:
         if isinstance(sample_size, float) and sample_size < 1:
             sample_size = math.floor(len(data) * sample_size)
             print(f'Converted Sample Size: {sample_size}')
-
+        print(self.device)
         input_data = to_data_loader(data, self.device, shuffle=False)
 
         uncertainty_values = self.get_predictions(input_data, model, method)
@@ -116,13 +116,10 @@ class Sampler:
     def sample_by_value_3(self, data, sample_size, values):
         # Create a pandas DataFrame from values and index
         df_values = pd.DataFrame({'index': data.index, 'value': values})
-        print(df_values)
         # Sort DataFrame by value
         df_values.sort_values('value', ascending=False, inplace=True)
-        print(df_values)
         # Get top sample_size indices based on uncertainty
         indices_to_label_i = df_values.iloc[:sample_size]['index'].tolist()
-        print(indices_to_label_i)
         # Filter data DataFrame using isin for index matching
         mask_to_label = data.index.isin(indices_to_label_i)
         to_label = data[mask_to_label]
@@ -131,7 +128,6 @@ class Sampler:
         pseudo_labels_i = df_values[df_values['value'] < self.u_cap]['index'].tolist()
         mask_pseudo_labels = remaining.index.isin(pseudo_labels_i)
         pseudo_labels = remaining[mask_pseudo_labels]
-        print(pseudo_labels_i)
         return to_label, remaining, pseudo_labels
 
     @staticmethod
