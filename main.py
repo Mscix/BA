@@ -95,7 +95,7 @@ class Main:
         with wandb.init(project='active-learning-plus', config=hyperparameters):
             self.data.labelled = self.strong_labeler.label(self.data.partial)
             train_dataloader = to_data_loader(self.data.labelled, self.device.type)
-            self.trainer.train(train_dataloader, self.data, 0)
+            self.trainer.train(train_dataloader, self.data, 0, 0)
 
     def al(self, hyperparameters):
         # loss = []
@@ -113,8 +113,9 @@ class Main:
                 # self.weak_labeler = KMeansLabeller(self.data, self.fixed_centroids)
                 # Initially trains on all Samples
                 self.data.partial = self.weak_labeler.label(self.data.partial)
-                # should initial iteration be on partial or on only labelled?
-                train_set = pd.concat([self.data.labelled, self.data.partial])
+                # TODO: should initial iteration be on partial and labelled or on only labelled?
+                # train_set = pd.concat([self.data.labelled, self.data.partial])
+                train_set = self.data.labelled
             else:
                 train_set = self.data.labelled
             # --------------- AL PLUS --------------- #
@@ -140,7 +141,7 @@ class Main:
                     train_set = self.data.labelled
                 # --------------- AL PLUS --------------- #
                 train_dataloader = to_data_loader(train_set, self.device.type)
-                self.trainer.train(train_dataloader, self.data, i + 1)
+                self.trainer.train(train_dataloader, self.data, len(pseudo_labels), i + 1)
 
     def test_weak_labeler(self):
         w = CustomLabeller(0.25, self.data.control)

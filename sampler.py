@@ -43,7 +43,7 @@ class Sampler:
         sampled = data.sample(frac=sample_size, random_state=42)
         remaining = data.drop(sampled.index)
         # remaining is returned twice the third return value is for pseudo labels
-        return sampled, remaining, remaining
+        return sampled, remaining, []
 
     def uncertainty_sampling(self, data, sample_size, model, method):
         # if sample_size is a float converts it to an absolute n

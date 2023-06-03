@@ -1,7 +1,6 @@
 # Data processing
 import numpy as np
 import pandas as pd
-from transformers import AutoTokenizer
 # Hugging Face Dataset
 from datasets import Dataset
 from torch.utils.data import DataLoader
@@ -85,11 +84,6 @@ class Preprocessor:
         # Split Training set 80%,  Validation set 20% (Only Two split)
         self.train_data = df.sample(frac=0.8)
         self.eval_data = df.drop(self.train_data.index)
-
-        # Load Tokenizer from a Bert model
-        model = "bert-base-cased"
-        self.tokenizer = AutoTokenizer.from_pretrained(model)
-
         # This is how the data is split later on
         self.labelled = None
         self.partial = self.train_data

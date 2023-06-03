@@ -29,7 +29,7 @@ class Trainer:
         self.al_results = {}
         self.epoch = 0
 
-    def train(self, train_dataloader: DataLoader, data: Preprocessor, al_iteration=0):
+    def train(self, train_dataloader: DataLoader, data: Preprocessor, pseudo_labels_len, al_iteration=0):
         # need criterion?
         wandb.watch(self.model, log='all', log_freq=10)
         self.reset_model()
@@ -40,7 +40,7 @@ class Trainer:
         # not 'while True:' just in case
         while epoch < 500:
             loss_accumulator = 0.0
-            print(f'Epoch {epoch}')
+            # print(f'Epoch {epoch}')
             # Loop through the batches
             for batch in train_dataloader:
                 # Get the batch
@@ -68,6 +68,7 @@ class Trainer:
             results['Strong Labels'] = len(data.labelled)
             results['avg Training Loss'] = loss_accumulator / len(train_dataloader)
             results['epoch'] = self.epoch
+            results['pseudo_labels_len'] = pseudo_labels_len
             wandb.log(results)
             epoch += 1
             self.epoch += 1
@@ -90,8 +91,8 @@ class Trainer:
             torch.cuda.empty_cache()
 
     def early_stopping(self, results):
-        print('Measured Loss: ' + str(results['avg Validation Loss']) +
-              ', Current Best Loss: ' + str(self.best_val_loss))
+        # print('Measured Loss: ' + str(results['avg Validation Loss']) +
+        #      ', Current Best Loss: ' + str(self.best_val_loss))
         # Lower loss obviously better
         if self.best_val_loss is None:
             # self.best_val_loss = results['avg Validation Loss']
@@ -104,7 +105,7 @@ class Trainer:
         elif self.best_val_loss - results['avg Validation Loss'] < self.delta:
             self.patience_counter += 1
             if self.patience_counter >= self.patience:
-                print(f'Early stopping {self.patience_counter}')
+                # print(f'Early stopping {self.patience_counter}')
                 # Loads the best state into current model
                 self.model.load_state_dict(self.best_model.state_dict())
                 # Rest values
@@ -112,7 +113,7 @@ class Trainer:
                 self.best_val_loss = None
                 # return True to stop the loop
                 return True
-        print(f'Current Patience {self.patience_counter}/{self.patience}')
+        # print(f'Current Patience {self.patience_counter}/{self.patience}')
         return False
 
     def set_metrics(self, results):
