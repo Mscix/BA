@@ -30,7 +30,9 @@ class Evaluator:
         self.evaluation_results = {}
 
     def eval(self, model):
-        model.eval()
+        if model.training:
+            model.eval()
+        # PUT THE EVAL data permanently on the GPU
         loss_accumulator = 0.0
         for batch in self.eval_dataloader:
             # Get the batch

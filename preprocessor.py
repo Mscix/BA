@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from ast import literal_eval
 
 
-def to_data_loader(df, device):
+def to_data_loader(df, device, shuffle=True):
     data = Dataset.from_pandas(df)
 
     data = data.remove_columns(['Embedding', 'Index'])
@@ -20,18 +20,17 @@ def to_data_loader(df, device):
     if device == 'cuda':
         # batch_size = 256
         # batch_size = 128
-        data = DataLoader(dataset=data, batch_size=64)
-    elif device == 'prediction':
-        data = DataLoader(dataset=data, batch_size=1, shuffle=False)
+        data = DataLoader(dataset=data, batch_size=64, shuffle=shuffle)
     else:
-        data = DataLoader(dataset=data, batch_size=2)
+        data = DataLoader(dataset=data, batch_size=2, shuffle=shuffle)
 
-    if device == 'cuda':
-        for batch_id, sample in enumerate(data):
-            labels = sample['labels'].to('cuda')
-            input_ids = sample['input_ids'].to('cuda')
-            token_type_ids = sample['token_type_ids'].to('cuda')
-            attention_mask = sample['attention_mask'].to('cuda')
+    # unnecessary
+    # if device == 'cuda':
+    #    for batch_id, sample in enumerate(data):
+    #        labels = sample['labels'].to('cuda')
+    #        input_ids = sample['input_ids'].to('cuda')
+    #        token_type_ids = sample['token_type_ids'].to('cuda')
+    #        attention_mask = sample['attention_mask'].to('cuda')
     return data
 
 
@@ -82,7 +81,7 @@ class Preprocessor:
         self.control = df
         self.df = df
         # Split Training set 80%,  Validation set 20% (Only Two split)
-        self.train_data = df.sample(frac=0.8)
+        self.train_data = df.sample(frac=0.8, random_state=42)
         self.eval_data = df.drop(self.train_data.index)
         # This is how the data is split later on
         self.labelled = None

@@ -2,6 +2,7 @@ import torch
 import math
 from preprocessor import to_data_loader
 import numpy as np
+import pandas as pd
 
 
 class Sampler:
@@ -51,16 +52,18 @@ class Sampler:
             sample_size = math.floor(len(data) * sample_size)
             print(f'Converted Sample Size: {sample_size}')
 
-        input_data = to_data_loader(data, 'prediction')
+        input_data = to_data_loader(data, self.device, shuffle=False)
 
         uncertainty_values = self.get_predictions(input_data, model, method)
 
-        to_label, remaining, pseudo_labels = self.sample_by_value_2(data, sample_size, uncertainty_values)
+        to_label, remaining, pseudo_labels = self.sample_by_value_3(data, sample_size, uncertainty_values)
 
         return to_label, remaining, pseudo_labels
 
     def get_predictions(self, data, model, f):
-        model.eval()
+        in_training = model.training
+        if in_training:
+            model.eval()
         uncertainty_values = []
         for batch in data:
             # Get the batch
@@ -69,11 +72,12 @@ class Sampler:
             with torch.no_grad():
                 # Compute the model output
                 output = model(**batch)
-            probabilities = output.logits
-            probabilities = probabilities.softmax(dim=1)
-            value = f(probabilities)
-            uncertainty_values.append(value)
-        model.train()
+            probabilities = output.logits.softmax(dim=1)
+            value_batch = f(probabilities)
+            # uncertainty_values.append(value)
+            uncertainty_values.extend(value_batch.cpu().tolist())
+        if not in_training:
+            model.train()
         return uncertainty_values
 
     def sample_by_value_py(self, data, sample_size, values):
@@ -101,15 +105,33 @@ class Sampler:
         np_zipped = np.array(zipped, dtype=self.dtype)
 
         result = np.sort(np_zipped, order='value')  # sorts in ascending order
-        print(result)
         indices_to_label_i = result[-sample_size:]['index']  # get last samples
-        print(indices_to_label_i)
         pseudo_labels_i = result[result['value'] < self.u_cap]['index']  # get all indexes where values smaller u_cap
-        print(pseudo_labels_i)
 
         to_label = data[data.index.isin(indices_to_label_i)]
         pseudo_labels = data[data.index.isin(pseudo_labels_i)]
         remaining = data.drop(indices_to_label_i)
+        return to_label, remaining, pseudo_labels
+
+    def sample_by_value_3(self, data, sample_size, values):
+        # Create a pandas DataFrame from values and index
+        df_values = pd.DataFrame({'index': data.index, 'value': values})
+        print(df_values)
+        # Sort DataFrame by value
+        df_values.sort_values('value', ascending=False, inplace=True)
+        print(df_values)
+        # Get top sample_size indices based on uncertainty
+        indices_to_label_i = df_values.iloc[:sample_size]['index'].tolist()
+        print(indices_to_label_i)
+        # Filter data DataFrame using isin for index matching
+        mask_to_label = data.index.isin(indices_to_label_i)
+        to_label = data[mask_to_label]
+        remaining = data[~mask_to_label]
+        # Get the instances where values smaller u_cap
+        pseudo_labels_i = df_values[df_values['value'] < self.u_cap]['index'].tolist()
+        mask_pseudo_labels = remaining.index.isin(pseudo_labels_i)
+        pseudo_labels = remaining[mask_pseudo_labels]
+        print(pseudo_labels_i)
         return to_label, remaining, pseudo_labels
 
     @staticmethod
@@ -138,12 +160,12 @@ class Sampler:
     def entropy(probs):
         # Something wrong here
         #  Entropy for predictions for all classes
+        print(probs)
         probs = torch.tensor(probs, device=probs.device) if not torch.is_tensor(probs) else probs
-
-        inner = probs * torch.log2(probs)
-        numerator = 0 - torch.sum(inner)
-        denominator = torch.log2(torch.tensor(probs.numel(), dtype=torch.float, device=probs.device))
-        return numerator / denominator
+        log_probs = torch.log2(probs)
+        result = -torch.sum(probs * log_probs, dim=1)
+        result /= torch.log2(torch.tensor(probs.size(1), dtype=torch.float, device=probs.device))
+        return result
 
     @staticmethod
     def least(probs):

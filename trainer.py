@@ -33,7 +33,8 @@ class Trainer:
         # need criterion?
         wandb.watch(self.model, log='all', log_freq=10)
         self.reset_model()
-        self.model.train()
+        if not self.model.training:
+            self.model.train()
 
         # Set up training evaluator, as each iteration the train set changes?
         epoch = 0
@@ -41,6 +42,7 @@ class Trainer:
         while epoch < 500:
             loss_accumulator = 0.0
             # print(f'Epoch {epoch}')
+            # TODO correction do not load every time the stuff to the device as its repetetive..
             # Loop through the batches
             for batch in train_dataloader:
                 # Get the batch
@@ -76,7 +78,6 @@ class Trainer:
             if self.early_stopping(results):
                 wandb.log(self.al_results)
                 return
-            torch.cuda.empty_cache()
 
     def reset_model(self):
         if self.resetting_model:

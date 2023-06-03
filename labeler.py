@@ -61,7 +61,7 @@ class CustomLabeller(WeaklyLabeller):
         # Take subset of control df that has the matching indexes of to_label
         indices = to_label.index.tolist()
         control = self.control_data.loc[indices]
-        _control = control.copy()
+        # _control = control.copy()
 
         # Check if samples correctly
         false_labels, correct_labels, _ = Sampler.random_sampling(control, self.error_rate)
