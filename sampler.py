@@ -52,11 +52,11 @@ class Sampler:
             sample_size = math.floor(len(data) * sample_size)
             print(f'Converted Sample Size: {sample_size}')
         print('uncertainty_sampling')
-        input_data = to_data_loader(data, self.device, shuffle=False)
+        input_data = to_data_loader(data, self.device.type, shuffle=False)
         print('uncertainty_sampling')
         uncertainty_values = self.get_predictions(input_data, model, method)
 
-        to_label, remaining, pseudo_labels = self.sample_by_value_3(data, sample_size, uncertainty_values)
+        to_label, remaining, pseudo_labels = self.sample_by_value(data, sample_size, uncertainty_values)
 
         return to_label, remaining, pseudo_labels
 
@@ -80,8 +80,7 @@ class Sampler:
             model.train()
         return uncertainty_values
 
-    def sample_by_value_py(self, data, sample_size, values):
-        # TODO: pycharm profiler
+    def _sample_by_value_py(self, data, sample_size, values):
         # This method works on lists
 
         zipped = zip(data.index.tolist(), values)
@@ -100,20 +99,8 @@ class Sampler:
         remaining = data.drop(indices_to_label_i)
         return to_label, remaining, pseudo_labels
 
-    def sample_by_value_2(self, data, sample_size, values):
-        zipped = list(zip(data.index.tolist(), [v.item() for v in values]))
-        np_zipped = np.array(zipped, dtype=self.dtype)
-
-        result = np.sort(np_zipped, order='value')  # sorts in ascending order
-        indices_to_label_i = result[-sample_size:]['index']  # get last samples
-        pseudo_labels_i = result[result['value'] < self.u_cap]['index']  # get all indexes where values smaller u_cap
-
-        to_label = data[data.index.isin(indices_to_label_i)]
-        pseudo_labels = data[data.index.isin(pseudo_labels_i)]
-        remaining = data.drop(indices_to_label_i)
-        return to_label, remaining, pseudo_labels
-
-    def sample_by_value_3(self, data, sample_size, values):
+    def sample_by_value(self, data, sample_size, values):
+        # This method works on dfs
         # Create a pandas DataFrame from values and index
         df_values = pd.DataFrame({'index': data.index, 'value': values})
         # Sort DataFrame by value
@@ -129,25 +116,6 @@ class Sampler:
         mask_pseudo_labels = remaining.index.isin(pseudo_labels_i)
         pseudo_labels = remaining[mask_pseudo_labels]
         return to_label, remaining, pseudo_labels
-
-    @staticmethod
-    def sample_by_value_np(data, n, values):
-        # This method works on np arrays
-
-        # Get the indices of the given data
-        all_indices = np.array(data.index.tolist(), dtype=np.int32)
-        # Zips the indices list and the uncertainty values
-        zipped = np.rec.fromarrays([all_indices, values], names='indices,values')
-        # Sorts on the values
-        sorted_zip = np.sort(zipped, order='values')
-        # Pick the last n samples
-        indices_to_label = sorted_zip['indices'][-n:]
-        # Take only the data points that correspond with indices
-        to_label = data[data.index.isin(indices_to_label)]
-        # Drop the chosen data points so only have the remaining ones
-        remaining = data.drop(indices_to_label)
-        # Return both
-        return to_label, remaining
 
     # Following sampling methods are Adapted from:
     # Munro, R. (2021). Human in the Loop: Machine Learning and AI for Human-Centered Design. O'Reilly Media.
