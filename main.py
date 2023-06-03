@@ -62,7 +62,7 @@ class Main:
         self.evaluator = Evaluator(self.device, self.eval_dataloader)
         self.trainer = Trainer(self.model, self.device, self.evaluator, resetting_model,
                                copy.deepcopy(self.model.state_dict()), patience)
-        self.sampler = Sampler(delta=delta)
+        self.sampler = Sampler(self.device, delta=delta)
         self.sampling_method = sampling_method
         self.mode = mode
         self.weakly_error = weakly_error
