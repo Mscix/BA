@@ -51,9 +51,7 @@ class Sampler:
         if isinstance(sample_size, float) and sample_size < 1:
             sample_size = math.floor(len(data) * sample_size)
             print(f'Converted Sample Size: {sample_size}')
-        print('uncertainty_sampling')
         input_data = to_data_loader(data, self.device.type, shuffle=False)
-        print('uncertainty_sampling')
         uncertainty_values = self.get_predictions(input_data, model, method)
 
         to_label, remaining, pseudo_labels = self.sample_by_value(data, sample_size, uncertainty_values)
@@ -124,7 +122,6 @@ class Sampler:
     def entropy(probs):
         # Something wrong here
         #  Entropy for predictions for all classes
-        print(probs)
         probs = torch.tensor(probs, device=probs.device) if not torch.is_tensor(probs) else probs
         log_probs = torch.log2(probs)
         result = -torch.sum(probs * log_probs, dim=1)
@@ -133,8 +130,8 @@ class Sampler:
 
     @staticmethod
     def least(probs):
-        most_conf = np.nanmax(probs)
-        n = probs.size
+        most_conf, _ = torch.max(probs, dim=1)  # returns max values along dimension 1 (classes)
+        n = probs.shape[1]  # number of classes
         numerator = n * (1 - most_conf)
         denominator = n - 1
         return numerator / denominator
