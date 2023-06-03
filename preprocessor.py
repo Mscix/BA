@@ -20,6 +20,8 @@ def to_data_loader(df, device, shuffle=True):
     if device == 'cuda':
         # batch_size = 256
         # batch_size = 128
+        print('I AM HERE')
+        print(device)
         data = DataLoader(dataset=data, batch_size=64, shuffle=shuffle)
     else:
         data = DataLoader(dataset=data, batch_size=2, shuffle=shuffle)

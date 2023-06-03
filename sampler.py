@@ -51,9 +51,9 @@ class Sampler:
         if isinstance(sample_size, float) and sample_size < 1:
             sample_size = math.floor(len(data) * sample_size)
             print(f'Converted Sample Size: {sample_size}')
-        print(self.device)
+        print('uncertainty_sampling')
         input_data = to_data_loader(data, self.device, shuffle=False)
-
+        print('uncertainty_sampling')
         uncertainty_values = self.get_predictions(input_data, model, method)
 
         to_label, remaining, pseudo_labels = self.sample_by_value_3(data, sample_size, uncertainty_values)
