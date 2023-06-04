@@ -5,7 +5,7 @@ from preprocessor import Preprocessor, to_data_loader
 from evaluator import Evaluator
 from transformers import AutoModelForSequenceClassification
 import torch
-from labeler import KMeansLabeller, StrongLabeller, CustomLabeller
+from labeler import KMeansLabeller, StrongLabeller, CustomLabeller, WeaklyLabeller
 from sampler import Sampler
 import pandas as pd
 import wandb
@@ -86,7 +86,9 @@ class Main:
         if self.mode == 'Standard':
             self.standard_ml(self.hyperparameters)
         elif self.mode == 'Dev':
-            self.test_weak_labeler()
+            # Turn this into testing func
+            # self.test_weak_labeler()
+            self.test_calc_error()
         else:
             # Default
             self.al(self.hyperparameters)
@@ -120,7 +122,7 @@ class Main:
                 train_set = self.data.labelled
             # --------------- AL PLUS --------------- #
             train_dataloader = to_data_loader(train_set, self.device.type)
-            self.trainer.train(train_dataloader, self.data, 0)
+            self.trainer.train(train_dataloader, self.data, None, 0)
 
             for i in range(al_iterations):
                 print(f'AL Iteration: {i + 1}')
@@ -141,7 +143,7 @@ class Main:
                     train_set = self.data.labelled
                 # --------------- AL PLUS --------------- #
                 train_dataloader = to_data_loader(train_set, self.device.type)
-                self.trainer.train(train_dataloader, self.data, len(pseudo_labels), i + 1)
+                self.trainer.train(train_dataloader, self.data, pseudo_labels, i + 1)
 
     def test_weak_labeler(self):
         w = CustomLabeller(0.25, self.data.control)
@@ -156,6 +158,16 @@ class Main:
         print(labelled_25.sort_index().head(40))
         print(labelled_75.sort_index().head(40))
         print(labelled_ones.sort_index().head(40))
+
+    def test_calc_error(self):
+        error_rate = 0.25
+        w = CustomLabeller(error_rate, self.data.control)
+        labelled_25 = w.label(self.data.control)
+        print(f'df len: {len(self.data.control)}')
+        print(f'Error Rate : {error_rate}')
+        print(f'Calculated Error: {WeaklyLabeller.calc_error(self.data.control, labelled_25)}')
+
+
 
 
 if __name__ == "__main__":

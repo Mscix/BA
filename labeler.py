@@ -4,10 +4,12 @@ import wandb
 import random
 import pandas as pd
 from sampler import Sampler
+
+
 class WeaklyLabeller:
 
     @staticmethod
-    def calc_error(w_input, w_output):
+    def _calc_error(w_input, w_output):
         non_matching_count = 0
         list_len = len(w_input)
         for i in range(list_len):
@@ -15,6 +17,16 @@ class WeaklyLabeller:
                 non_matching_count += 1
 
         return f"{non_matching_count} / {list_len}"
+
+    @staticmethod
+    def calc_error(control, subset):
+        if control is None or subset is None:
+            return 0
+        df = pd.merge(control, subset, on='Index', suffixes=('_control', '_subset'))
+        # Compare the columns on merged df
+        df['is_diff'] = df['Class Index_control'] != df['Class Index_subset']
+        # Count and return the value
+        return df['is_diff'].sum()
 
 
 class KMeansLabeller(WeaklyLabeller):
@@ -43,7 +55,7 @@ class KMeansLabeller(WeaklyLabeller):
         to_label['Class Index'] = self.get_fit_predict(embeddings)
 
         w_output = to_label['Class Index'].sort_index().tolist()
-        wandb.log({'Weakly labeller error': self.calc_error(w_input, w_output)})
+        # wandb.log({'Weakly labeller error': self.calc_error(w_input, w_output)})
         return to_label
 
     def reset_kmeans(self, num_clusters, random_state, init_centroids):

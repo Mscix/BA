@@ -5,6 +5,7 @@ from torch.optim import AdamW
 from torch.utils.data import DataLoader
 from preprocessor import Preprocessor
 from transformers import AutoModelForSequenceClassification
+from labeler import WeaklyLabeller
 import copy
 
 
@@ -29,7 +30,7 @@ class Trainer:
         self.al_results = {}
         self.epoch = 0
 
-    def train(self, train_dataloader: DataLoader, data: Preprocessor, pseudo_labels_len, al_iteration=0):
+    def train(self, train_dataloader: DataLoader, data: Preprocessor, pseudo_labels, al_iteration=0):
         # need criterion?
         wandb.watch(self.model, log='all', log_freq=10)
         self.reset_model()
@@ -69,8 +70,8 @@ class Trainer:
             results['Strong Labels'] = len(data.labelled)
             results['avg Training Loss'] = loss_accumulator / len(train_dataloader)
             results['epoch'] = self.epoch
-            results['pseudo_labels_len'] = pseudo_labels_len
-            print(f'pseudo labels {pseudo_labels_len}')
+            results['pseudo_labels_len'] = 0 if pseudo_labels is None else len(pseudo_labels)
+            results['pseudo_labels_err'] = WeaklyLabeller.calc_error(data.control, pseudo_labels)
             wandb.log(results)
             epoch += 1
             self.epoch += 1
