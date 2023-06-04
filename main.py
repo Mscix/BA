@@ -27,7 +27,7 @@ class Main:
                  n_sample_size=0.01,
                  resetting_model=False,
                  patience=3,
-                 delta=0
+                 delta=1
                  ):
 
         # Load model
@@ -141,6 +141,7 @@ class Main:
 
                 else:
                     train_set = self.data.labelled
+                    pseudo_labels = None
                 # --------------- AL PLUS --------------- #
                 train_dataloader = to_data_loader(train_set, self.device.type)
                 self.trainer.train(train_dataloader, self.data, pseudo_labels, i + 1)
