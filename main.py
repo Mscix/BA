@@ -142,7 +142,7 @@ class Main:
                     train_set = pd.concat([self.data.labelled, pseudo_labels])
 
                     if len(pseudo_labels) > pseudo_labels_len:
-                        self.delta += 0.5
+                        self.delta += 0.05
                         pseudo_labels_len = len(pseudo_labels)
                 else:
                     train_set = self.data.labelled
