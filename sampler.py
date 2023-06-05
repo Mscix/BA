@@ -79,25 +79,6 @@ class Sampler:
             model.train()
         return uncertainty_values
 
-    def _sample_by_value_py(self, data, sample_size, values):
-        # This method works on lists
-
-        zipped = zip(data.index.tolist(), values)
-
-        result = sorted(zipped, reverse=True, key=lambda x: x[1])
-        print(result)
-        # Get indices to keep track of data
-        indices_to_label_i = [x[0] for x in result[:sample_size]]
-        print(indices_to_label_i)
-
-        pseudo_labels_i = [x[0] for x in result[sample_size:] if x[1].item() < self.u_cap]
-        print(pseudo_labels_i)
-        to_label = data[data.index.isin(indices_to_label_i)]
-        pseudo_labels = data[data.index.isin(pseudo_labels_i)]
-
-        remaining = data.drop(indices_to_label_i)
-        return to_label, remaining, pseudo_labels
-
     def sample_by_value(self, data, sample_size, values):
         # This method works on dfs
         # Create a pandas DataFrame from values and index
@@ -112,11 +93,17 @@ class Sampler:
         remaining = data[~mask_to_label]
         pseudo_labels = []
         if self.mode == 'AL+':
-            # Get the instances where values smaller u_cap
-            pseudo_labels_i = df_values[df_values['value'] < self.u_cap]['index'].tolist()
-            mask_pseudo_labels = remaining.index.isin(pseudo_labels_i)
-            pseudo_labels = remaining[mask_pseudo_labels]
+            pseudo_labels = self.generate_pseudo_labels(df_values, remaining, self.u_cap)
         return to_label, remaining, pseudo_labels
+
+    @staticmethod
+    def generate_pseudo_labels(df_values, remaining, delta):
+        # Get the instances where values smaller u_cap
+        pseudo_labels_i = df_values[df_values['value'] < delta]['index'].tolist()
+        mask_pseudo_labels = remaining.index.isin(pseudo_labels_i)
+        pseudo_labels = remaining[mask_pseudo_labels]
+        return pseudo_labels
+    
 
     # Following sampling methods are Adapted from:
     # Munro, R. (2021). Human in the Loop: Machine Learning and AI for Human-Centered Design. O'Reilly Media.
@@ -141,14 +128,14 @@ class Sampler:
 
     @staticmethod
     def margin(probs):
-        probs[::-1].sort()
-        diff = probs[0] - probs[1]
+        sorted_probs, _ = torch.sort(probs, dim=1, descending=True)
+        diff = sorted_probs[:, 0] - sorted_probs[:, 1]
         return 1 - diff
 
     @staticmethod
     def ratio(probs):
-        probs[::-1].sort()
-        return probs[1] / probs[0]
+        sorted_probs, _ = torch.sort(probs, dim=1, descending=True)
+        return sorted_probs[:, 1] / sorted_probs[:, 0]
 
     def diversity_sampling(self, data, sample_size):
         pass

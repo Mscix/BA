@@ -7,17 +7,6 @@ from sampler import Sampler
 
 
 class WeaklyLabeller:
-
-    @staticmethod
-    def _calc_error(w_input, w_output):
-        non_matching_count = 0
-        list_len = len(w_input)
-        for i in range(list_len):
-            if w_input[i] != w_output[i]:
-                non_matching_count += 1
-
-        return f"{non_matching_count} / {list_len}"
-
     @staticmethod
     def calc_error(control, subset):
         if control is None or subset is None:

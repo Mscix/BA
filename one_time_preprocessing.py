@@ -19,10 +19,10 @@ if __name__ == "__main__":
     # Read files
 
     # Write fiels
-    data = pd.read_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/small_e.csv', index_col='Index')
+    data = pd.read_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/medium.csv', index_col='Index')
     data = transform_data(data)
-    data.to_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/small_t.csv')
+    data.to_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/medium_t.csv')
 
-    data = pd.read_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/big_e.csv', index_col='Index')
-    data = transform_data(data)
-    data.to_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/big_t.csv')
+    # data = pd.read_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/big_e.csv', index_col='Index')
+    # data = transform_data(data)
+    # data.to_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/big_t.csv')

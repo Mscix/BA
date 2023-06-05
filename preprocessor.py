@@ -8,9 +8,13 @@ from ast import literal_eval
 
 
 def to_data_loader(df, device, shuffle=True):
+    if 'Embedding' in df.columns:
+        # Remove the column from the DataFrame
+        df = df.drop('Embedding', axis=1)
+
     data = Dataset.from_pandas(df)
 
-    data = data.remove_columns(['Embedding', 'Index'])
+    data = data.remove_columns(['Index'])
 
     # Change name Class Index -> labels because the model expects name labels
     data = data.rename_column("Class Index", "labels")
@@ -23,21 +27,10 @@ def to_data_loader(df, device, shuffle=True):
         data = DataLoader(dataset=data, batch_size=64, shuffle=shuffle)
     else:
         data = DataLoader(dataset=data, batch_size=2, shuffle=shuffle)
-
-    # unnecessary
-    # if device == 'cuda':
-    #    for batch_id, sample in enumerate(data):
-    #        labels = sample['labels'].to('cuda')
-    #        input_ids = sample['input_ids'].to('cuda')
-    #        token_type_ids = sample['token_type_ids'].to('cuda')
-    #        attention_mask = sample['attention_mask'].to('cuda')
     return data
 
 
 def get_first_reps_4_class(df, keep=True):
-    # TODO: the Problem I discussed with Fabian can happen here lol add Exception handler or something
-    # maybe for now set manually ...
-    # This is not a random method but after fixed labelling when used it should be, because of random sampling
     centroids = []
     to_drop = []
     for class_id in range(4):
