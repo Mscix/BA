@@ -62,10 +62,11 @@ class Main:
         self.evaluator = Evaluator(self.device, self.eval_dataloader)
         self.trainer = Trainer(self.model, self.device, self.evaluator, resetting_model,
                                copy.deepcopy(self.model.state_dict()), patience)
-        self.sampler = Sampler(self.device, mode, delta=delta)
+        self.sampler = Sampler(self.device, mode)
         self.sampling_method = sampling_method
         self.mode = mode
         self.weakly_error = weakly_error
+        self.delta = delta
 
         # pass the actual error rate also? because if insufficient data size
         self.hyperparameters = {
@@ -105,7 +106,7 @@ class Main:
             init_sample_size = hyperparameters['Init Sample Size']
             sample_size = hyperparameters['N-Sample']
             al_iterations = hyperparameters['AL Iterations']
-            i = 0
+            pseudo_labels_len = 0
             print('AL Iteration: 0')
             init_sample, self.data.partial, _ = self.sampler.sample(self.data.partial, init_sample_size)
             self.data.labelled = self.strong_labeler.label(init_sample)
@@ -130,7 +131,8 @@ class Main:
                 sample, self.data.partial, pseudo_labels = self.sampler.sample(data=self.data.partial,
                                                                                sample_size=sample_size,
                                                                                sampling_method=self.sampling_method,
-                                                                               model=self.trainer.model
+                                                                               model=self.trainer.model,
+                                                                               u_cap=1-self.delta
                                                                                )
                 self.data.labelled = pd.concat([self.data.labelled, self.strong_labeler.label(sample)])
                 # --------------- AL PLUS --------------- #
@@ -139,6 +141,9 @@ class Main:
                     # train_set = pd.concat([self.data.labelled, self.data.partial])
                     train_set = pd.concat([self.data.labelled, pseudo_labels])
 
+                    if len(pseudo_labels) > pseudo_labels_len:
+                        self.delta += 0.5
+                        pseudo_labels_len = pseudo_labels
                 else:
                     train_set = self.data.labelled
                     pseudo_labels = None

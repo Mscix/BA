@@ -7,34 +7,32 @@ import pandas as pd
 
 class Sampler:
 
-    def __init__(self, device, mode, delta=0):
+    def __init__(self, device, mode):
         self.device = device
         # delta is the confidence from which the instances are accepted as pseudo labels
         # because only the uncertainty is calculated transform; 1 - confidence = uncertainty
         # u_cap: uncertainty cap
-        self.u_cap = 1 - delta
+        # self.u_cap = 1 - delta
         self.dtype = np.dtype([('index', int), ('value', float)])
         self.mode = mode
 
-    def sample(self, data, sample_size, sampling_method='Random', model=None):
+    def sample(self, data, sample_size, sampling_method='Random', model=None, u_cap=0):
         # result: (remaining, sampled)
         if sampling_method == 'Random':
             result = self.random_sampling(data, sample_size)
+            return result
         # For Uncertainty sampling: the splicing happens from the back care
         elif sampling_method == 'EC':
-            # Get the ones with the highest entropy => ascending
-            result = self.uncertainty_sampling(data, sample_size, model, self.entropy)
+            method = self.entropy
         elif sampling_method == 'LC':
-            # Get the ones with the lowest Prediction confidence => descending
-            result = self.uncertainty_sampling(data, sample_size, model, self.least)
+            method = self.least
         elif sampling_method == 'MC':
-            # Get the ones with the biggest margin => ascending
-            result = self.uncertainty_sampling(data, sample_size, model, self.margin)
+            method = self.margin
         elif sampling_method == 'RC':
-            # Get the ones with the highest ratio => ascending
-            result = self.uncertainty_sampling(data, sample_size, model, self.ratio)
+            method = self.ratio
         else:
             raise Exception('TODO: implement')
+        result = self.uncertainty_sampling(data, sample_size, model, method, u_cap)
         return result
 
     @staticmethod
@@ -47,7 +45,7 @@ class Sampler:
         # remaining is returned twice the third return value is for pseudo labels
         return sampled, remaining, None
 
-    def uncertainty_sampling(self, data, sample_size, model, method):
+    def uncertainty_sampling(self, data, sample_size, model, method, u_cap=0):
         # if sample_size is a float converts it to an absolute n
         if isinstance(sample_size, float) and sample_size < 1:
             sample_size = math.floor(len(data) * sample_size)
@@ -55,7 +53,7 @@ class Sampler:
         input_data = to_data_loader(data, self.device.type, shuffle=False)
         uncertainty_values = self.get_predictions(input_data, model, method)
 
-        to_label, remaining, pseudo_labels = self.sample_by_value(data, sample_size, uncertainty_values)
+        to_label, remaining, pseudo_labels = self.sample_by_value(data, sample_size, uncertainty_values, u_cap)
 
         return to_label, remaining, pseudo_labels
 
@@ -79,7 +77,7 @@ class Sampler:
             model.train()
         return uncertainty_values
 
-    def sample_by_value(self, data, sample_size, values):
+    def sample_by_value(self, data, sample_size, values, u_cap):
         # This method works on dfs
         # Create a pandas DataFrame from values and index
         df_values = pd.DataFrame({'index': data.index, 'value': values})
@@ -93,13 +91,13 @@ class Sampler:
         remaining = data[~mask_to_label]
         pseudo_labels = []
         if self.mode == 'AL+':
-            pseudo_labels = self.generate_pseudo_labels(df_values, remaining, self.u_cap)
+            pseudo_labels = self.generate_pseudo_labels(df_values, remaining, u_cap)
         return to_label, remaining, pseudo_labels
 
     @staticmethod
-    def generate_pseudo_labels(df_values, remaining, delta):
+    def generate_pseudo_labels(df_values, remaining, u_cap):
         # Get the instances where values smaller u_cap
-        pseudo_labels_i = df_values[df_values['value'] < delta]['index'].tolist()
+        pseudo_labels_i = df_values[df_values['value'] < u_cap]['index'].tolist()
         mask_pseudo_labels = remaining.index.isin(pseudo_labels_i)
         pseudo_labels = remaining[mask_pseudo_labels]
         return pseudo_labels
