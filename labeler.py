@@ -1,9 +1,7 @@
 from sklearn.cluster import KMeans
 from preprocessor import Preprocessor, get_first_reps_4_class, get_embeddings_from_df
-import wandb
 import random
 import pandas as pd
-from sampler import Sampler
 
 
 class WeaklyLabeller:
@@ -65,18 +63,14 @@ class CustomLabeller(WeaklyLabeller):
         # _control = control.copy()
 
         # Check if samples correctly
-        false_labels, correct_labels, _ = Sampler.random_sampling(control, self.error_rate)
+        # false_labels, correct_labels, _ = Sampler.random_sampling(control, self.error_rate)
+        false_labels = control.sample(frac=self.error_rate, random_state=42)
+        correct_labels = control.drop(false_labels.index)
 
         false_labels = self.false_label(false_labels)
 
         result = pd.concat([correct_labels, false_labels])
-
-        # print(self.calc_error(result['Class Index'].sort_index().tolist(),
-        #                      _control['Class Index'].sort_index().tolist()))
-
         return result
-
-
 
     @staticmethod
     def false_label(to_label):
@@ -97,3 +91,23 @@ class StrongLabeller:
         _control = self.control.loc[mask]
         to_label['Class Index'] = _control['Class Index']
         return to_label
+
+
+class PredictionLabeller:
+    @staticmethod
+    def prediction_to_class(predictions):
+        # Returns the class with the highest prediction
+        return predictions.index(max(predictions))
+
+    def label(self, to_label, predictions):
+        class_indexes = list(map(self.prediction_to_class, predictions))
+        print('predictions')
+        print(len(predictions))
+        print(predictions)
+        print('to_label_1')
+        print(to_label)
+        to_label['Class Index'] = class_indexes
+        print('to_label_2')
+        print(to_label)
+        return to_label
+

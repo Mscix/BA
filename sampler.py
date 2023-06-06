@@ -3,11 +3,12 @@ import math
 from preprocessor import to_data_loader
 import numpy as np
 import pandas as pd
+from labeler import PredictionLabeller
 
 
 class Sampler:
 
-    def __init__(self, device, mode):
+    def __init__(self, device, mode, accept_weakly_labels):
         self.device = device
         # delta is the confidence from which the instances are accepted as pseudo labels
         # because only the uncertainty is calculated transform; 1 - confidence = uncertainty
@@ -15,6 +16,7 @@ class Sampler:
         # self.u_cap = 1 - delta
         self.dtype = np.dtype([('index', int), ('value', float)])
         self.mode = mode
+        self.accept_weakly_labels = accept_weakly_labels
 
     def sample(self, data, sample_size, sampling_method='Random', model=None, u_cap=0):
         # result: (remaining, sampled)
@@ -51,9 +53,9 @@ class Sampler:
             sample_size = math.floor(len(data) * sample_size)
             print(f'Converted Sample Size: {sample_size}')
         input_data = to_data_loader(data, self.device.type, shuffle=False)
-        uncertainty_values = self.get_predictions(input_data, model, method)
+        uncertainty_values, predictions = self.get_predictions(input_data, model, method)
 
-        to_label, remaining, pseudo_labels = self.sample_by_value(data, sample_size, uncertainty_values, u_cap)
+        to_label, remaining, pseudo_labels = self.sample_by_value(data, sample_size, uncertainty_values, predictions, u_cap)
 
         return to_label, remaining, pseudo_labels
 
@@ -62,6 +64,7 @@ class Sampler:
         if in_training:
             model.eval()
         uncertainty_values = []
+        predictions = []
         for batch in data:
             # Get the batch
             batch = {k: v.to(self.device) for k, v in batch.items()}
@@ -69,18 +72,18 @@ class Sampler:
             with torch.no_grad():
                 # Compute the model output
                 output = model(**batch)
-            probabilities = output.logits.softmax(dim=1)
-            value_batch = f(probabilities)
-            # uncertainty_values.append(value)
+            prediction = output.logits.softmax(dim=1)
+            predictions.extend(prediction.cpu().tolist())
+            value_batch = f(prediction)
             uncertainty_values.extend(value_batch.cpu().tolist())
         if not in_training:
             model.train()
-        return uncertainty_values
+        return uncertainty_values, predictions
 
-    def sample_by_value(self, data, sample_size, values, u_cap):
+    def sample_by_value(self, data, sample_size, values, predictions, u_cap):
         # This method works on dfs
         # Create a pandas DataFrame from values and index
-        df_values = pd.DataFrame({'index': data.index, 'value': values})
+        df_values = pd.DataFrame({'index': data.index, 'value': values, 'prediction': predictions})
         # Sort DataFrame by value
         df_values.sort_values('value', ascending=False, inplace=True)
         # Get top sample_size indices based on uncertainty
@@ -91,18 +94,21 @@ class Sampler:
         remaining = data[~mask_to_label]
         pseudo_labels = []
         if self.mode == 'AL+':
-            pseudo_labels = self.generate_pseudo_labels(df_values, remaining, u_cap)
+            pseudo_labels = self.generate_pseudo_labels(df_values[~mask_to_label], remaining, u_cap)
         return to_label, remaining, pseudo_labels
 
-    @staticmethod
-    def generate_pseudo_labels(df_values, remaining, u_cap):
+    def generate_pseudo_labels(self, df, remaining, u_cap):
         # Get the instances where values smaller u_cap
-        pseudo_labels_i = df_values[df_values['value'] < u_cap]['index'].tolist()
+        c_df = df[df['value'] < u_cap]
+        pseudo_labels_i = c_df['index'].tolist()
         mask_pseudo_labels = remaining.index.isin(pseudo_labels_i)
         pseudo_labels = remaining[mask_pseudo_labels]
+        if not self.accept_weakly_labels:
+            # The Pseudo Labels get their labels based on the model prediction and not the Weakly Labelers
+            pl = PredictionLabeller()
+            pseudo_labels = pl.label(pseudo_labels, c_df['prediction'].tolist())
         return pseudo_labels
     
-
     # Following sampling methods are Adapted from:
     # Munro, R. (2021). Human in the Loop: Machine Learning and AI for Human-Centered Design. O'Reilly Media.
     # The results are in the range of [0,1] and 1 means most uncertain

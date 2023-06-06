@@ -27,7 +27,8 @@ class Main:
                  n_sample_size=0.01,
                  resetting_model=False,
                  patience=3,
-                 delta=1
+                 delta=1,
+                 accept_weakly_labels=True
                  ):
 
         # Load model
@@ -62,7 +63,7 @@ class Main:
         self.evaluator = Evaluator(self.device, self.eval_dataloader)
         self.trainer = Trainer(self.model, self.device, self.evaluator, resetting_model,
                                copy.deepcopy(self.model.state_dict()), patience)
-        self.sampler = Sampler(self.device, mode)
+        self.sampler = Sampler(self.device, mode, accept_weakly_labels)
         self.sampling_method = sampling_method
         self.mode = mode
         self.weakly_error = weakly_error
@@ -112,13 +113,16 @@ class Main:
             self.data.labelled = self.strong_labeler.label(init_sample)
 
             # --------------- AL PLUS --------------- #
-            if self.mode == 'AL+' or self.mode == 'ALI':
+            if self.mode == 'AL+':
                 # self.weak_labeler = KMeansLabeller(self.data, self.fixed_centroids)
                 # Initially trains on all Samples
                 self.data.partial = self.weak_labeler.label(self.data.partial)
                 # TODO: should initial iteration be on partial and labelled or on only labelled?
                 # train_set = pd.concat([self.data.labelled, self.data.partial])
                 train_set = self.data.labelled
+            elif self.mode == 'ALI':
+                self.data.partial = self.weak_labeler.label(self.data.partial)
+                train_set = pd.concat([self.data.labelled, self.data.partial])
             else:
                 train_set = self.data.labelled
             # --------------- AL PLUS --------------- #
@@ -202,7 +206,7 @@ if __name__ == "__main__":
     parser.add_argument('-err', '--weakly_error', type=float, default=0.25,
                         help='The error rate of the custom WeaklyLabeller')
 
-    parser.add_argument('-r', '--resetting_model', type=bool, default=False,
+    parser.add_argument('-r', '--resetting_model', action='store_true',
                         help='Should the model be reset for each training?')
 
     parser.add_argument('-pat', '--patience', type=int, default=3,
@@ -210,6 +214,9 @@ if __name__ == "__main__":
 
     parser.add_argument('-d', '--delta', type=float, default=0,
                         help='Confidence from which the pseudo labels are accepted as Pseudo Labels.')
+
+    parser.add_argument('-aw', '--accept_weakly_labels', action='store_true',
+                        help='Accept Weakly Labels or the model Prediction')
 
     args = parser.parse_args()
 
@@ -230,6 +237,7 @@ if __name__ == "__main__":
     _resetting_model = args.resetting_model
     _patience = args.patience
     _delta = args.delta
+    _accept_weakly_labels = args.accept_weakly_labels
 
     m = Main(data_path,
              pipeline_mode,
@@ -241,6 +249,7 @@ if __name__ == "__main__":
              init_sample_size=_init_sample_size,
              resetting_model=_resetting_model,
              patience=_patience,
-             delta=_delta
+             delta=_delta,
+             accept_weakly_labels=_accept_weakly_labels
              )
     m.run()
