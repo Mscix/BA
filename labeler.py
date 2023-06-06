@@ -101,13 +101,6 @@ class PredictionLabeller:
 
     def label(self, to_label, predictions):
         class_indexes = list(map(self.prediction_to_class, predictions))
-        print('predictions')
-        print(len(predictions))
-        print(predictions)
-        print('to_label_1')
-        print(to_label)
         to_label['Class Index'] = class_indexes
-        print('to_label_2')
-        print(to_label)
         return to_label
 
