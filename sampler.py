@@ -84,6 +84,7 @@ class Sampler:
         # This method works on dfs
         # Create a pandas DataFrame from values and index
         df_values = pd.DataFrame({'index': data.index, 'value': values, 'prediction': predictions})
+        print(df_values)
         # Sort DataFrame by value
         df_values.sort_values('value', ascending=False, inplace=True)
         # Get top sample_size indices based on uncertainty
@@ -92,9 +93,10 @@ class Sampler:
         mask_to_label = data.index.isin(indices_to_label_i)
         to_label = data[mask_to_label]
         remaining = data[~mask_to_label]
-        pseudo_labels = []
+        pseudo_labels = pd.DataFrame()
         if self.mode == 'AL+':
-            pseudo_labels = self.generate_pseudo_labels(df_values[~mask_to_label], remaining, u_cap)
+            # does not work as intendet
+            pseudo_labels = self.generate_pseudo_labels(df_values.iloc[sample_size:], remaining, u_cap)
         return to_label, remaining, pseudo_labels
 
     def generate_pseudo_labels(self, df, remaining, u_cap):
@@ -107,6 +109,9 @@ class Sampler:
             # The Pseudo Labels get their labels based on the model prediction and not the Weakly Labelers
             pl = PredictionLabeller()
             pseudo_labels = pl.label(pseudo_labels, c_df['prediction'].tolist())
+        print(f'final pseudo lenght {len(pseudo_labels)}')
+        print(u_cap)
+        print(pseudo_labels)
         return pseudo_labels
     
     # Following sampling methods are Adapted from:

@@ -10,16 +10,15 @@ import copy
 
 
 class Trainer:
-    def __init__(self,  model, device, v_eval, resetting_model, initial_weights, patience=3):
+    def __init__(self,  model, device, evaluator, resetting_model, initial_weights, patience=3):
         self.model = model
         self.device = device
         self.optimizer = AdamW(params=self.model.parameters(), lr=5e-6)  # check if the optimizer ok like this
         self.al_iteration = 0
         self.best_val_loss = None
         self.best_model = None
-        self.v_eval = v_eval
+        self.evaluator = evaluator
         self.delta = 0
-        # self.t_eval = t_eval
         self.resetting_model = resetting_model
         self.initial_weights = initial_weights
         self.patience = patience
@@ -28,7 +27,8 @@ class Trainer:
         # Do not place on GPU otherwise there will be storage problems
         self.best_model = copy.deepcopy(self.model)
         self.al_results = {}
-        self.epoch = 0
+        # self.results = {}
+        self.total_epoch = 0
 
     def train(self, train_dataloader: DataLoader, data: Preprocessor, pseudo_labels, al_iteration=0):
         # need criterion?
@@ -36,6 +36,9 @@ class Trainer:
         self.reset_model()
         if not self.model.training:
             self.model.train()
+        results = {'AL Iteration': al_iteration, 'Strong Labels': len(data.labelled),
+                   'pseudo_labels_len': 0 if pseudo_labels is None else len(pseudo_labels),
+                   'pseudo_labels_err': WeaklyLabeller.calc_error(data.control, pseudo_labels)}
 
         # Set up training evaluator, as each iteration the train set changes?
         epoch = 0
@@ -60,24 +63,16 @@ class Trainer:
                 # Clear the gradients
                 self.optimizer.zero_grad()
 
-                # Logs every batch
-                # wandb.log()
-            # LOG best accuracy for this AL Iteration
-            # For every AL iteration log new 'Run'
-            # Log for both layers AL and epoch layer
-            results = self.v_eval.eval(self.model)
-            results['AL Iteration'] = al_iteration
-            results['Strong Labels'] = len(data.labelled)
             results['avg Training Loss'] = loss_accumulator / len(train_dataloader)
-            results['epoch'] = self.epoch
-            results['pseudo_labels_len'] = 0 if pseudo_labels is None else len(pseudo_labels)
-            results['pseudo_labels_err'] = WeaklyLabeller.calc_error(data.control, pseudo_labels)
+            results['epoch'] = self.total_epoch
+            results = {**results, **self.evaluator.eval(self.model, valid=True)}
+
             wandb.log(results)
             epoch += 1
-            self.epoch += 1
+            self.total_epoch += 1
 
             if self.early_stopping(results):
-                wandb.log(self.al_results)
+                wandb.log({**self.al_results, **results, **self.evaluator.eval(self.model, valid=False)})
                 return
 
     def reset_model(self):
@@ -92,19 +87,26 @@ class Trainer:
             # self.current_accuracy = 0
             torch.cuda.empty_cache()
 
+    def set_metrics(self, results):
+        self.al_results['*avg Validation Loss'] = self.best_val_loss = results['avg validation Loss']
+        self.al_results['*accuracy'] = results['validation accuracy']
+        self.al_results['*f1'] = results['validation f1']
+        self.al_results['*precision'] = results['validation precision']
+        self.al_results['*recall'] = results['validation recall']
+
     def early_stopping(self, results):
         # print('Measured Loss: ' + str(results['avg Validation Loss']) +
         #      ', Current Best Loss: ' + str(self.best_val_loss))
         # Lower loss obviously better
         if self.best_val_loss is None:
-            # self.best_val_loss = results['avg Validation Loss']
-            self.set_metrics(results)
-        elif self.best_val_loss - results['avg Validation Loss'] > self.delta:
+            self.best_val_loss = results['avg validation Loss']
+            # self.set_metrics(results)
+        elif self.best_val_loss - results['avg validation Loss'] > self.delta:
             self.set_metrics(results)
             self.patience_counter = 0
             # Loads the current state of self.model into self.best_model as the loss is bette
             self.best_model.load_state_dict(self.model.state_dict())
-        elif self.best_val_loss - results['avg Validation Loss'] < self.delta:
+        elif self.best_val_loss - results['avg validation Loss'] < self.delta:
             self.patience_counter += 1
             if self.patience_counter >= self.patience:
                 # print(f'Early stopping {self.patience_counter}')
@@ -118,12 +120,5 @@ class Trainer:
         # print(f'Current Patience {self.patience_counter}/{self.patience}')
         return False
 
-    def set_metrics(self, results):
-        self.al_results['*avg Validation Loss'] = self.best_val_loss = results['avg Validation Loss']
-        self.al_results['*accuracy'] = results['accuracy']
-        self.al_results['*f1'] = results['f1']
-        self.al_results['*precision'] = results['precision']
-        self.al_results['*recall'] = results['recall']
-        self.al_results['AL Iteration'] = results['AL Iteration']
-        self.al_results['Strong Labels'] = results['Strong Labels']
+
 

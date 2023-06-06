@@ -8,7 +8,7 @@ import wandb
 
 
 class Evaluator:
-    def __init__(self, device, eval_dataloader):
+    def __init__(self, device, valid_dataloader, test_dataloader):
         self.device = device
         self.accuracy = evaluate.load('accuracy')
         self.recall = evaluate.load('recall')
@@ -25,16 +25,22 @@ class Evaluator:
         # A list for all predicted labels
         self.predictions_all = []
 
-        self.eval_dataloader = eval_dataloader
+        self.valid_dataloader = valid_dataloader
+        self.test_dataloader = test_dataloader
 
         self.evaluation_results = {}
 
-    def eval(self, model):
+    def eval(self, model, valid):
         if model.training:
             model.eval()
         # PUT THE EVAL data permanently on the GPU
+        if valid:
+            dataloader = self.valid_dataloader
+        else:
+            dataloader = self.test_dataloader
+
         loss_accumulator = 0.0
-        for batch in self.eval_dataloader:
+        for batch in dataloader:
             # Get the batch
             batch = {k: v.to(self.device) for k, v in batch.items()}
             # Disable the gradient calculation
@@ -67,9 +73,22 @@ class Evaluator:
             **self.recall.compute(average='macro', zero_division=0),
             **self.precision.compute(average='macro', zero_division=0),
             **self.f1.compute(average='macro'),
-            'avg Validation Loss': loss_accumulator / len(self.eval_dataloader)
+            'avg Loss': loss_accumulator / len(dataloader)
         }
-        return self.evaluation_results
+        return self.get_final_results(self.evaluation_results, valid)
 
     def get_predictions(self):
         return self.predictions_all
+
+    @staticmethod
+    def get_final_results(evaluation_results, valid):
+        if valid:
+            prefix = 'validation'
+        else:
+            prefix = 'test'
+        results = {f'{prefix} accuracy': evaluation_results['accuracy'],
+                   f'avg {prefix} Loss': evaluation_results['avg Loss'],
+                   f'{prefix} f1': evaluation_results['f1'],
+                   f'{prefix} precision': evaluation_results['precision'],
+                   f'{prefix} recall': evaluation_results['recall']}
+        return results

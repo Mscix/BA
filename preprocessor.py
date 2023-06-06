@@ -12,6 +12,8 @@ def to_data_loader(df, device, shuffle=True):
         # Remove the column from the DataFrame
         df = df.drop('Embedding', axis=1)
 
+    df['Class Index'] = df['Class Index'].astype(int)
+
     data = Dataset.from_pandas(df)
 
     data = data.remove_columns(['Index'])
@@ -60,22 +62,30 @@ def get_embedding(df, index):
 
 
 class Preprocessor:
-    def __init__(self, path: str, device):  # pass mode?
+    def __init__(self, path_train, path_test: str, device):  # pass mode?
         # Don't forget, that still have the test.csv
         # set the index_col as Index, which is the custom index in relation to the whole set
         self.device = device
-        df = pd.read_csv(path, index_col='Index')
+        df = pd.read_csv(path_train, index_col='Index')
+        dft = pd.read_csv(path_test, index_col='Index')
 
         # df = df[['Class Index', 'Description']]  # only these two columns
         df['Class Index'] = df['Class Index'] - 1  # Cross Class entropy expects [0,3] instead of [1,4]
         df['input_ids'] = df['input_ids'].apply(literal_eval)
         df['attention_mask'] = df['attention_mask'].apply(literal_eval)
         df['token_type_ids'] = df['token_type_ids'].apply(literal_eval)
+
+        dft['Class Index'] = dft['Class Index'] - 1  # Cross Class entropy expects [0,3] instead of [1,4]
+        dft['input_ids'] = dft['input_ids'].apply(literal_eval)
+        dft['attention_mask'] = dft['attention_mask'].apply(literal_eval)
+        dft['token_type_ids'] = dft['token_type_ids'].apply(literal_eval)
+
         self.control = df
         self.df = df
         # Split Training set 80%,  Validation set 20% (Only Two split)
         self.train_data = df.sample(frac=0.8, random_state=42)
         self.eval_data = df.drop(self.train_data.index)
+        self.test_data = dft
         # This is how the data is split later on
         self.labelled = None
         self.partial = self.train_data

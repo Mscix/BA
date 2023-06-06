@@ -17,7 +17,8 @@ import warnings
 
 class Main:
     def __init__(self,
-                 path,
+                 path_train,
+                 path_test,
                  mode,
                  sampling_method,
                  weakly_error=0.25,
@@ -42,7 +43,7 @@ class Main:
             self.device = torch.device('cpu')
         # Empty cache
         torch.cuda.empty_cache()
-        self.data = Preprocessor(path, self.device.type)
+        self.data = Preprocessor(path_train, path_test, self.device.type)
 
         self.mode = mode
         weak_labeler = 'K-Means'
@@ -59,8 +60,9 @@ class Main:
 
         self.model.to(self.device)
 
-        self.eval_dataloader = to_data_loader(self.data.eval_data, self.device.type)
-        self.evaluator = Evaluator(self.device, self.eval_dataloader)
+        self.valid_dataloader = to_data_loader(self.data.eval_data, self.device.type)
+        self.test_dataloader = to_data_loader(self.data.test_data, self.device.type)
+        self.evaluator = Evaluator(self.device, self.valid_dataloader, self.test_dataloader)
         self.trainer = Trainer(self.model, self.device, self.evaluator, resetting_model,
                                copy.deepcopy(self.model.state_dict()), patience)
         self.sampler = Sampler(self.device, mode, accept_weakly_labels)
@@ -187,6 +189,9 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--path', type=str, help='Path to the csv file with the data set.',
                         default='/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/small_t.csv')
 
+    parser.add_argument('-tp', '--test_path', type=str, help='Path to the csv file with the test set.',
+                        default='/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/small_t_test.csv')
+
     parser.add_argument('-m', '--mode', type=str, choices=['AL', 'AL+', 'ALI', 'Standard', 'Dev'], default='AL+',
                         help='The Learning mode.')
 
@@ -222,6 +227,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     data_path = args.path
+    test_path = args.test_path
     pipeline_mode = args.mode
     _sampling_method = args.sampling_method
     _epochs = args.epochs
@@ -241,6 +247,7 @@ if __name__ == "__main__":
     _accept_weakly_labels = args.accept_weakly_labels
 
     m = Main(data_path,
+             test_path,
              pipeline_mode,
              _sampling_method,
              weakly_error=_weakly_error,
