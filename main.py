@@ -81,7 +81,8 @@ class Main:
             'Reset Model': resetting_model,
             'AL Iterations': al_iterations,
             'Patience': patience,
-            'P. Label Conf.': delta
+            'P. Label Conf.': delta,
+            'PL from:': 'WL' if accept_weakly_labels else 'Self'
         }
 
     def run(self):
