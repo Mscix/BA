@@ -42,6 +42,7 @@ class Sampler:
         # In case absolute sample size is the input
         if sample_size > 1:
             sample_size = sample_size / len(data)
+            print(sample_size)
         sampled = data.sample(frac=sample_size, random_state=42)
         remaining = data.drop(sampled.index)
         # remaining is returned twice the third return value is for pseudo labels
