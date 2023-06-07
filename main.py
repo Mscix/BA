@@ -74,7 +74,7 @@ class Main:
         # pass the actual error rate also? because if insufficient data size
         self.hyperparameters = {
             'Mode': mode,
-            'Weakly Error': 0 if mode != 'AL+' else weakly_error,
+            'Weakly Error': 0 if mode != 'AL+' and mode != 'ALI' else weakly_error,
             'Data Set': 'AG_NEWS',
             'Train Set': len(self.data.train_data),
             'Sampling Method': sampling_method,
