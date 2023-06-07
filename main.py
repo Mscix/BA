@@ -181,8 +181,6 @@ class Main:
         print(f'Calculated Error: {WeaklyLabeller.calc_error(self.data.control, labelled_25)}')
 
 
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process passed Hyperparameters.')
 
@@ -213,7 +211,7 @@ if __name__ == "__main__":
                         help='The error rate of the custom WeaklyLabeller')
 
     parser.add_argument('-r', '--resetting_model', action='store_true',
-                        help='Should the model be reset for each training?')
+                        help='This argument determines whether the model is reset each active learning (AL) iteration.')
 
     parser.add_argument('-pat', '--patience', type=int, default=3,
                         help='This the tolerance parameter for Early stopping.')

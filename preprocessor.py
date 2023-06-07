@@ -62,7 +62,7 @@ def get_embedding(df, index):
 
 
 class Preprocessor:
-    def __init__(self, path_train, path_test: str, device):  # pass mode?
+    def __init__(self, path_train, path_test: str, device, fixed_init_sample=False):  # pass mode?
         # Don't forget, that still have the test.csv
         # set the index_col as Index, which is the custom index in relation to the whole set
         self.device = device

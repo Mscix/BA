@@ -13,7 +13,7 @@ class Trainer:
     def __init__(self,  model, device, evaluator, resetting_model, initial_weights, patience=3):
         self.model = model
         self.device = device
-        self.optimizer = AdamW(params=self.model.parameters(), lr=5e-6)  # check if the optimizer ok like this
+        self.optimizer = AdamW(params=self.model.parameters(), lr=5e-5)  # check if the optimizer ok like this
         self.al_iteration = 0
         self.best_val_loss = None
         self.best_model = None
