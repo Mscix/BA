@@ -217,5 +217,6 @@ class Sampler:
 
             # Get the remaining data
             remaining_data = data.drop(data.index[sampled_indices])
-
+            print(len(sampled_data))
+            print(len(remaining_data))
             return sampled_data, remaining_data, None
