@@ -7,6 +7,7 @@ from labeler import PredictionLabeller
 
 from sklearn.cluster import KMeans
 from sklearn.metrics import pairwise_distances_argmin_min
+from sklearn.metrics.pairwise import cosine_similarity
 
 
 class Sampler:
@@ -29,6 +30,9 @@ class Sampler:
         # For Uncertainty sampling: the splicing happens from the back care
         elif sampling_method == 'Diversity':
             result = self.diversity_sampling(data, sample_size)
+            return result
+        elif sampling_method == 'SD':
+            result = self.similarity_diversity_sampling(data, sample_size, preprocessor)
             return result
         elif sampling_method == 'EC':
             method = self.entropy
@@ -157,6 +161,7 @@ class Sampler:
 
     @staticmethod
     def diversity_sampling(data, sample_size):
+        # TODO: Additionally account for dissimilarity with the already sampled instances
         # define number of clusters based on your requirement
         n_clusters = min(sample_size, len(data))
 
@@ -179,3 +184,38 @@ class Sampler:
         remaining_data = data.drop(sampled_indices)
 
         return sampled_data, remaining_data, None
+
+    @staticmethod
+    def similarity_diversity_sampling(data, sample_size, preprocessor: Preprocessor):
+            """
+            data: DataFrame with 'Embedding' column
+            sample_size: Number of instances to sample
+            threshold: Threshold for similarity, below which instances are considered too similar
+            """
+            # TRY
+            threshold = 0.7
+            embeddings = get_embeddings_from_df(data)
+            already_sampled_embeddings = get_embeddings_from_df(preprocessor.labelled)
+
+            # Perform clustering on the embeddings
+            kmeans = KMeans(n_clusters=sample_size)
+            kmeans.fit(embeddings)
+            cluster_centers = kmeans.cluster_centers_
+
+            # Identify the instances closest to the cluster centers
+            closest, _ = pairwise_distances_argmin_min(cluster_centers, embeddings)
+
+            # Exclude instances that are too similar to already sampled instances
+            sampled_indices = []
+            for index in closest:
+                similarity = cosine_similarity([embeddings[index]], already_sampled_embeddings)
+                if np.max(similarity) < threshold:
+                    sampled_indices.append(index)
+
+            # Get the sampled data
+            sampled_data = data.iloc[sampled_indices]
+
+            # Get the remaining data
+            remaining_data = data.drop(data.index[sampled_indices])
+
+            return sampled_data, remaining_data, None

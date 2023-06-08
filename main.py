@@ -120,7 +120,6 @@ class Main:
                 # self.weak_labeler = KMeansLabeller(self.data, self.fixed_centroids)
                 # Initially trains on all Samples
                 self.data.partial = self.weak_labeler.label(self.data.partial)
-                # TODO: should initial iteration be on partial and labelled or on only labelled?
                 # train_set = pd.concat([self.data.labelled, self.data.partial])
                 train_set = self.data.labelled
             elif self.mode == 'ALI':
@@ -194,7 +193,8 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--mode', type=str, choices=['AL', 'AL+', 'ALI', 'Standard', 'Dev'], default='AL+',
                         help='The Learning mode.')
 
-    parser.add_argument('-sm', '--sampling_method', type=str, choices=['Random', 'EC', 'LC', 'MC', 'RC', 'Diversity'],
+    parser.add_argument('-sm', '--sampling_method', type=str, choices=['Random', 'EC', 'LC', 'MC', 'RC', 'Diversity',
+                                                                       'SD'],
                         default='Random', help='Sampling method for active learning.')
 
     parser.add_argument('-ep', '--epochs', type=int, default=1,
