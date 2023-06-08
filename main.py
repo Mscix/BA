@@ -112,7 +112,7 @@ class Main:
             al_iterations = hyperparameters['AL Iterations']
             pseudo_labels_len = 0
             print('AL Iteration: 0')
-            init_sample, self.data.partial, _ = self.sampler.sample(self.data.partial, init_sample_size)
+            init_sample, self.data.partial, _ = self.sampler.sample(self.data, self.data.partial, init_sample_size)
             self.data.labelled = self.strong_labeler.label(init_sample)
 
             # --------------- AL PLUS --------------- #
@@ -135,11 +135,12 @@ class Main:
             for i in range(al_iterations):
                 print(f'AL Iteration: {i + 1}')
                 # Here should be split into 3 groups
-                sample, self.data.partial, pseudo_labels = self.sampler.sample(data=self.data.partial,
+                sample, self.data.partial, pseudo_labels = self.sampler.sample(preprocessor=self.data,
+                                                                               data=self.data.partial,
                                                                                sample_size=sample_size,
                                                                                sampling_method=self.sampling_method,
                                                                                model=self.trainer.model,
-                                                                               u_cap=1-self.delta
+                                                                               u_cap=1 - self.delta
                                                                                )
                 self.data.labelled = pd.concat([self.data.labelled, self.strong_labeler.label(sample)])
                 # --------------- AL PLUS --------------- #
@@ -193,7 +194,7 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--mode', type=str, choices=['AL', 'AL+', 'ALI', 'Standard', 'Dev'], default='AL+',
                         help='The Learning mode.')
 
-    parser.add_argument('-sm', '--sampling_method', type=str, choices=['Random', 'EC', 'LC', 'MC', 'RC'],
+    parser.add_argument('-sm', '--sampling_method', type=str, choices=['Random', 'EC', 'LC', 'MC', 'RC', 'Diversity'],
                         default='Random', help='Sampling method for active learning.')
 
     parser.add_argument('-ep', '--epochs', type=int, default=1,

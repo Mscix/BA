@@ -1,5 +1,8 @@
 from transformers import AutoTokenizer
 import pandas as pd
+from datasets import load_dataset
+from sklearn.datasets import fetch_20newsgroups
+import numpy as np
 
 
 def transform_data(df):
@@ -16,30 +19,43 @@ def transform_data(df):
 
 
 if __name__ == "__main__":
+    # Load the dataset
+    newsgroups_train = fetch_20newsgroups(subset='all')
+
+    # The data is a list of texts, and the target is the list of corresponding labels
+    texts = newsgroups_train.data
+    labels = newsgroups_train.target
+
+    # Create a DataFrame
+    df = pd.DataFrame({'text': texts, 'label': labels})
+
+    # Write DataFrame to a CSV file
+    df.to_csv('20newsgroups.csv', index=False)
+
     # Read files
-    df = pd.read_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/AG_NEWS_KAGGLE/test.csv')
-    df = df.sort_values(by='Class Index')
-    print(df.head())
-    print(len(df))
+    # df = pd.read_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/AG_NEWS_KAGGLE/test.csv')
+    # df = df.sort_values(by='Class Index')
+    #print(df.head())
+    #print(len(df))
 
-    classes = df['Class Index'].unique()
-    balanced_subset = pd.DataFrame()
+    #classes = df['Class Index'].unique()
+    #balanced_subset = pd.DataFrame()
 
-    for class_label in classes:
+    #for class_label in classes:
         # Filter the dataset to extract samples from the current class
-        class_samples = df[df['Class Index'] == class_label].sample(n=200, random_state=42)
+    #    class_samples = df[df['Class Index'] == class_label].sample(n=200, random_state=42)
 
         # Append the extracted samples to the balanced subset
-        balanced_subset = pd.concat([balanced_subset, class_samples])
+    #    balanced_subset = pd.concat([balanced_subset, class_samples])
 
     # Reset the index of the balanced subset
-    balanced_subset = balanced_subset.reset_index(drop=True)
-    balanced_subset.index.name = 'Index'
-    balanced_subset = transform_data(balanced_subset)
+    #balanced_subset = balanced_subset.reset_index(drop=True)
+    #balanced_subset.index.name = 'Index'
+    #balanced_subset = transform_data(balanced_subset)
 
-    balanced_subset.to_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/big_t_test.csv')
+    #balanced_subset.to_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/big_t_test.csv')
 
-
+    #dataset = load_dataset('glue', 'sst2')
     # Write fiels
     # data = pd.read_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/medium.csv', index_col='Index')
     # data = transform_data(data)

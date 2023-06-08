@@ -1,9 +1,12 @@
 import torch
 import math
-from preprocessor import to_data_loader
+from preprocessor import to_data_loader, Preprocessor, get_embeddings_from_df
 import numpy as np
 import pandas as pd
 from labeler import PredictionLabeller
+
+from sklearn.cluster import KMeans
+from sklearn.metrics import pairwise_distances_argmin_min
 
 
 class Sampler:
@@ -18,12 +21,15 @@ class Sampler:
         self.mode = mode
         self.accept_weakly_labels = accept_weakly_labels
 
-    def sample(self, data, sample_size, sampling_method='Random', model=None, u_cap=0):
+    def sample(self, preprocessor, data, sample_size, sampling_method='Random', model=None, u_cap=0):
         # result: (remaining, sampled)
         if sampling_method == 'Random':
             result = self.random_sampling(data, sample_size)
             return result
         # For Uncertainty sampling: the splicing happens from the back care
+        elif sampling_method == 'Diversity':
+            result = self.diversity_sampling(data, sample_size)
+            return result
         elif sampling_method == 'EC':
             method = self.entropy
         elif sampling_method == 'LC':
@@ -57,7 +63,8 @@ class Sampler:
         input_data = to_data_loader(data, self.device.type, shuffle=False)
         uncertainty_values, predictions = self.get_predictions(input_data, model, method)
 
-        to_label, remaining, pseudo_labels = self.sample_by_value(data, sample_size, uncertainty_values, predictions, u_cap)
+        to_label, remaining, pseudo_labels = self.sample_by_value(data, sample_size, uncertainty_values, predictions,
+                                                                  u_cap)
 
         return to_label, remaining, pseudo_labels
 
@@ -115,7 +122,7 @@ class Sampler:
         print(u_cap)
         print(pseudo_labels)
         return pseudo_labels
-    
+
     # Following sampling methods are Adapted from:
     # Munro, R. (2021). Human in the Loop: Machine Learning and AI for Human-Centered Design. O'Reilly Media.
     # The results are in the range of [0,1] and 1 means most uncertain
@@ -148,5 +155,27 @@ class Sampler:
         sorted_probs, _ = torch.sort(probs, dim=1, descending=True)
         return sorted_probs[:, 1] / sorted_probs[:, 0]
 
-    def diversity_sampling(self, data, sample_size):
-        pass
+    @staticmethod
+    def diversity_sampling(data, sample_size):
+        # define number of clusters based on your requirement
+        n_clusters = min(sample_size, len(data))
+
+        # stack the embeddings
+        embeddings = np.stack(get_embeddings_from_df(data))
+
+        # apply KMeans clustering
+        kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(embeddings)
+
+        # select one sample from each cluster
+        sampled_indices = []
+        for i in range(n_clusters):
+            cluster_indices = np.where(kmeans.labels_ == i)[0]
+            sampled_index = np.random.choice(cluster_indices)
+            sampled_indices.append(data.index[sampled_index])
+
+        sampled_data = data.loc[sampled_indices]
+
+        # remaining data after sampling
+        remaining_data = data.drop(sampled_indices)
+
+        return sampled_data, remaining_data, None
