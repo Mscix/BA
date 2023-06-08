@@ -34,6 +34,9 @@ class Sampler:
         elif sampling_method == 'SD':
             result = self.similarity_diversity_sampling(data, sample_size, preprocessor)
             return result
+        elif sampling_method == 'DD':
+            result = self.dissimilarity_diversity_sampling(data, sample_size, preprocessor)
+            return result
         elif sampling_method == 'EC':
             method = self.entropy
         elif sampling_method == 'LC':
@@ -187,6 +190,7 @@ class Sampler:
 
     @staticmethod
     def similarity_diversity_sampling(data, sample_size, preprocessor: Preprocessor):
+            # Does not wokr as intended yet
             """
             data: DataFrame with 'Embedding' column
             sample_size: Number of instances to sample
@@ -220,3 +224,30 @@ class Sampler:
             print(len(sampled_data))
             print(len(remaining_data))
             return sampled_data, remaining_data, None
+
+    @staticmethod
+    def dissimilarity_diversity_sampling(data, sample_size, preprocessor: Preprocessor):
+
+        embeddings = get_embeddings_from_df(data)
+
+        already_sampled_embeddings = get_embeddings_from_df(preprocessor.labelled)
+
+        # Calculate cosine similarity between the new embeddings and labelled embeddings
+        cosine_similarities = cosine_similarity(embeddings, already_sampled_embeddings)
+
+        # Get average similarity for each new data point
+        avg_similarities = cosine_similarities.mean(axis=1)
+
+        # Get indices of the data points sorted by their average similarity
+        sorted_indices = np.argsort(avg_similarities)
+
+        # Choose the top 'sample_size' least similar data points
+        most_dissimilar_indices = sorted_indices[:sample_size]
+
+        # Return the most diverse data points
+        sampled_data = data.iloc[most_dissimilar_indices]
+
+        # Get the remaining data
+        remaining_data = data.drop(sampled_data.index)
+
+        return sampled_data, remaining_data, None

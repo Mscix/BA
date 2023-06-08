@@ -194,7 +194,7 @@ if __name__ == "__main__":
                         help='The Learning mode.')
 
     parser.add_argument('-sm', '--sampling_method', type=str, choices=['Random', 'EC', 'LC', 'MC', 'RC', 'Diversity',
-                                                                       'SD'],
+                                                                       'SD', 'DD'],
                         default='Random', help='Sampling method for active learning.')
 
     parser.add_argument('-ep', '--epochs', type=int, default=1,
