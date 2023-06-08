@@ -29,6 +29,7 @@ class Main:
                  resetting_model=False,
                  patience=3,
                  delta=1,
+                 delta_rate=0.0,
                  accept_weakly_labels=True
                  ):
 
@@ -70,6 +71,7 @@ class Main:
         self.mode = mode
         self.weakly_error = weakly_error
         self.delta = delta
+        self.delta_rate = delta_rate
 
         # pass the actual error rate also? because if insufficient data size
         self.hyperparameters = {
@@ -149,7 +151,7 @@ class Main:
                     train_set = pd.concat([self.data.labelled, pseudo_labels])
 
                     if len(pseudo_labels) > pseudo_labels_len:
-                        self.delta += 0.05
+                        self.delta += self.delta_rate
                         pseudo_labels_len = len(pseudo_labels)
                 else:
                     train_set = self.data.labelled
@@ -220,6 +222,9 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--delta', type=float, default=0,
                         help='Confidence from which the pseudo labels are accepted as Pseudo Labels.')
 
+    parser.add_argument('-dr', '--delta_rate', type=float, default=0.0,
+                        help='Delta adjustment if the Pseudo Label amount increases.')
+
     parser.add_argument('-aw', '--accept_weakly_labels', action='store_true',
                         help='Accept Weakly Labels or the model Prediction')
 
@@ -243,6 +248,7 @@ if __name__ == "__main__":
     _resetting_model = args.resetting_model
     _patience = args.patience
     _delta = args.delta
+    _delta_rate = args.delta_rate
     _accept_weakly_labels = args.accept_weakly_labels
 
     m = Main(data_path,
@@ -257,6 +263,7 @@ if __name__ == "__main__":
              resetting_model=_resetting_model,
              patience=_patience,
              delta=_delta,
+             delta_rate=_delta_rate,
              accept_weakly_labels=_accept_weakly_labels
              )
     m.run()

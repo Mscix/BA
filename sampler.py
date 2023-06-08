@@ -240,6 +240,7 @@ class Sampler:
 
         # Get indices of the data points sorted by their average similarity
         sorted_indices = np.argsort(avg_similarities)
+        print(sorted_indices)
 
         # Choose the top 'sample_size' least similar data points
         most_dissimilar_indices = sorted_indices[:sample_size]
