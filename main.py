@@ -148,11 +148,17 @@ class Main:
                 if self.mode == 'AL+':
                     # Here has to choose with the help of confidence
                     # train_set = pd.concat([self.data.labelled, self.data.partial])
-                    train_set = pd.concat([self.data.labelled, pseudo_labels])
 
-                    if len(pseudo_labels) > pseudo_labels_len:
-                        self.delta += self.delta_rate
-                        pseudo_labels_len = len(pseudo_labels)
+                    if pseudo_labels is not None:
+                        train_set = pd.concat([self.data.labelled, pseudo_labels])
+                        if len(pseudo_labels) > pseudo_labels_len:
+                            self.delta += self.delta_rate
+                            pseudo_labels_len = len(pseudo_labels)
+                    else:
+                        if self.delta == 0.0:
+                            train_set = pd.concat([self.data.labelled, self.data.partial])
+                        else:
+                            warnings.warn("Running AL through AL+ mode.")
                 else:
                     train_set = self.data.labelled
                     pseudo_labels = None
