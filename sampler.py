@@ -162,7 +162,6 @@ class Sampler:
 
     @staticmethod
     def diversity_sampling(data, sample_size):
-        # TODO: Additionally account for dissimilarity with the already sampled instances
         # define number of clusters based on your requirement
         n_clusters = min(sample_size, len(data))
 
@@ -219,6 +218,4 @@ class Sampler:
 
             # Get the remaining data
             remaining_data = data.drop(data.index[sampled_indices])
-            print(len(sampled_data))
-            print(len(remaining_data))
             return sampled_data, remaining_data, pd.DataFrame()

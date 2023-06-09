@@ -101,7 +101,9 @@ class Main:
 
     def standard_ml(self, hyperparameters):
         with wandb.init(project='active-learning-plus', config=hyperparameters):
-            self.data.labelled = self.strong_labeler.label(self.data.partial)
+            init_sample_size = hyperparameters['Init Sample Size']
+            init_sample, _, _ = self.sampler.sample(self.data, self.data.partial, init_sample_size)
+            self.data.labelled = self.strong_labeler.label(init_sample)
             train_dataloader = to_data_loader(self.data.labelled, self.device.type)
             self.trainer.train(train_dataloader, self.data, 0, 0)
 
