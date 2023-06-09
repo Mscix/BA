@@ -50,7 +50,7 @@ class Sampler:
     def random_sampling(data, sample_size):
         # In case absolute sample size is the input
         if sample_size > 1:
-            sampled = data.sample(n=sample_size, random_state=42)
+            sampled = data.sample(n=int(sample_size), random_state=42)
         else:
             sampled = data.sample(frac=sample_size, random_state=42)
         # print(f'sampled: {sampled}')
@@ -127,7 +127,6 @@ class Sampler:
     def prediction_to_class(predictions):
         # Returns the class with the highest prediction
         return predictions.index(max(predictions))
-
 
     # Following sampling methods are Adapted from:
     # Munro, R. (2021). Human in the Loop: Machine Learning and AI for Human-Centered Design. O'Reilly Media.
