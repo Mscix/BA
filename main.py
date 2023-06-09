@@ -29,8 +29,7 @@ class Main:
                  resetting_model=False,
                  patience=3,
                  delta=1,
-                 delta_rate=0.0,
-                 accept_weakly_labels=True
+                 delta_rate=0.0
                  ):
 
         # Load model
@@ -66,7 +65,7 @@ class Main:
         self.evaluator = Evaluator(self.device, self.valid_dataloader, self.test_dataloader)
         self.trainer = Trainer(self.model, self.device, self.evaluator, resetting_model,
                                copy.deepcopy(self.model.state_dict()), patience)
-        self.sampler = Sampler(self.device, mode, accept_weakly_labels)
+        self.sampler = Sampler(self.device, mode)
         self.sampling_method = sampling_method
         self.mode = mode
         self.weakly_error = weakly_error
@@ -86,8 +85,7 @@ class Main:
             'AL Iterations': al_iterations,
             'Patience': patience,
             'P. Label Conf.': delta,
-            'Delta Change': delta_rate,
-            'PL from:': 'WL' if accept_weakly_labels else 'Self'
+            'Delta Change': delta_rate
         }
 
     def run(self):
@@ -132,7 +130,7 @@ class Main:
                 train_set = self.data.labelled
             # --------------- AL PLUS --------------- #
             train_dataloader = to_data_loader(train_set, self.device.type)
-            self.trainer.train(train_dataloader, self.data, None, 0)
+            self.trainer.train(train_dataloader, self.data, pd.DataFrame(), 0)
 
             for i in range(al_iterations):
                 print(f'AL Iteration: {i + 1}')
@@ -149,20 +147,14 @@ class Main:
                 if self.mode == 'AL+':
                     # Here has to choose with the help of confidence
                     # train_set = pd.concat([self.data.labelled, self.data.partial])
-
-                    if pseudo_labels is not None:
-                        train_set = pd.concat([self.data.labelled, pseudo_labels])
-                        if len(pseudo_labels) > pseudo_labels_len:
-                            self.delta += self.delta_rate
-                            pseudo_labels_len = len(pseudo_labels)
-                    else:
-                        if self.delta == 0.0:
-                            train_set = pd.concat([self.data.labelled, self.data.partial])
-                        else:
-                            warnings.warn("Running AL through AL+ mode.")
+                    train_set = pd.concat([self.data.labelled, pseudo_labels])
+                    if len(pseudo_labels) > pseudo_labels_len:
+                        self.delta += self.delta_rate
+                        print(f'Current Delta: {self.delta}')
+                        pseudo_labels_len = len(pseudo_labels)
                 else:
                     train_set = self.data.labelled
-                    pseudo_labels = None
+                    pseudo_labels = pd.DataFrame()
                 # --------------- AL PLUS --------------- #
                 train_dataloader = to_data_loader(train_set, self.device.type)
                 self.trainer.train(train_dataloader, self.data, pseudo_labels, i + 1)
@@ -232,9 +224,6 @@ if __name__ == "__main__":
     parser.add_argument('-dr', '--delta_rate', type=float, default=0.0,
                         help='Delta adjustment if the Pseudo Label amount increases.')
 
-    parser.add_argument('-aw', '--accept_weakly_labels', action='store_true',
-                        help='Accept Weakly Labels or the model Prediction')
-
     args = parser.parse_args()
 
     data_path = args.path
@@ -256,7 +245,6 @@ if __name__ == "__main__":
     _patience = args.patience
     _delta = args.delta
     _delta_rate = args.delta_rate
-    _accept_weakly_labels = args.accept_weakly_labels
 
     m = Main(data_path,
              test_path,
@@ -270,7 +258,6 @@ if __name__ == "__main__":
              resetting_model=_resetting_model,
              patience=_patience,
              delta=_delta,
-             delta_rate=_delta_rate,
-             accept_weakly_labels=_accept_weakly_labels
+             delta_rate=_delta_rate
              )
     m.run()

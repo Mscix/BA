@@ -12,7 +12,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 class Sampler:
 
-    def __init__(self, device, mode, accept_weakly_labels):
+    def __init__(self, device, mode):
         self.device = device
         # delta is the confidence from which the instances are accepted as pseudo labels
         # because only the uncertainty is calculated transform; 1 - confidence = uncertainty
@@ -20,7 +20,6 @@ class Sampler:
         # self.u_cap = 1 - delta
         self.dtype = np.dtype([('index', int), ('value', float)])
         self.mode = mode
-        self.accept_weakly_labels = accept_weakly_labels
 
     def sample(self, preprocessor, data, sample_size, sampling_method='Random', model=None, u_cap=0):
         # result: (remaining, sampled)
@@ -33,9 +32,6 @@ class Sampler:
             return result
         elif sampling_method == 'SD':
             result = self.similarity_diversity_sampling(data, sample_size, preprocessor)
-            return result
-        elif sampling_method == 'DD':
-            result = self.dissimilarity_diversity_sampling(data, sample_size, preprocessor)
             return result
         elif sampling_method == 'EC':
             method = self.entropy
@@ -54,13 +50,13 @@ class Sampler:
     def random_sampling(data, sample_size):
         # In case absolute sample size is the input
         if sample_size > 1:
-            sample_size = sample_size / len(data)
-            print(sample_size)
-        sampled = data.sample(frac=sample_size, random_state=42)
-        print(f'sampled: {sampled}')
+            sampled = data.sample(n=sample_size, random_state=42)
+        else:
+            sampled = data.sample(frac=sample_size, random_state=42)
+        # print(f'sampled: {sampled}')
         remaining = data.drop(sampled.index)
         # remaining is returned twice the third return value is for pseudo labels
-        return sampled, remaining, None
+        return sampled, remaining, pd.DataFrame()
 
     def uncertainty_sampling(self, data, sample_size, model, method, u_cap=0):
         # if sample_size is a float converts it to an absolute n
@@ -100,35 +96,38 @@ class Sampler:
         # This method works on dfs
         # Create a pandas DataFrame from values and index
         df_values = pd.DataFrame({'index': data.index, 'value': values, 'prediction': predictions})
-        print(df_values)
+        df_values.set_index('index', inplace=True)
+        # print(df_values)
         # Sort DataFrame by value
         df_values.sort_values('value', ascending=False, inplace=True)
         # Get top sample_size indices based on uncertainty
-        indices_to_label_i = df_values.iloc[:sample_size]['index'].tolist()
+        indices_to_label_i = df_values.iloc[:sample_size].index
         # Filter data DataFrame using isin for index matching
         mask_to_label = data.index.isin(indices_to_label_i)
         to_label = data[mask_to_label]
         remaining = data[~mask_to_label]
         pseudo_labels = pd.DataFrame()
         if self.mode == 'AL+':
-            # does not work as intendet
             pseudo_labels = self.generate_pseudo_labels(df_values.iloc[sample_size:], remaining, u_cap)
         return to_label, remaining, pseudo_labels
 
     def generate_pseudo_labels(self, df, remaining, u_cap):
-        # Get the instances where values smaller u_cap
+        # Get the instances where values smaller u_cap and considers only those from Weakly Labeller
+        # where predictions and Weakly Label matches
         c_df = df[df['value'] < u_cap]
-        pseudo_labels_i = c_df['index'].tolist()
+        pseudo_labels_i = c_df.index
         mask_pseudo_labels = remaining.index.isin(pseudo_labels_i)
         pseudo_labels = remaining[mask_pseudo_labels]
-        if not self.accept_weakly_labels:
-            # The Pseudo Labels get their labels based on the model prediction and not the Weakly Labelers
-            pl = PredictionLabeller()
-            pseudo_labels = pl.label(pseudo_labels, c_df['prediction'].tolist())
-        print(f'final pseudo lenght {len(pseudo_labels)}')
-        print(u_cap)
-        print(pseudo_labels)
+        c_df['prediction'] = c_df['prediction'].apply(self.prediction_to_class)
+        mask = pseudo_labels.sort_index()['Class Index'] == c_df.sort_index()['prediction']
+        pseudo_labels = pseudo_labels[mask]
         return pseudo_labels
+
+    @staticmethod
+    def prediction_to_class(predictions):
+        # Returns the class with the highest prediction
+        return predictions.index(max(predictions))
+
 
     # Following sampling methods are Adapted from:
     # Munro, R. (2021). Human in the Loop: Machine Learning and AI for Human-Centered Design. O'Reilly Media.
@@ -186,7 +185,7 @@ class Sampler:
         # remaining data after sampling
         remaining_data = data.drop(sampled_indices)
 
-        return sampled_data, remaining_data, None
+        return sampled_data, remaining_data, pd.DataFrame()
 
     @staticmethod
     def similarity_diversity_sampling(data, sample_size, preprocessor: Preprocessor):
@@ -223,32 +222,4 @@ class Sampler:
             remaining_data = data.drop(data.index[sampled_indices])
             print(len(sampled_data))
             print(len(remaining_data))
-            return sampled_data, remaining_data, None
-
-    @staticmethod
-    def dissimilarity_diversity_sampling(data, sample_size, preprocessor: Preprocessor):
-
-        embeddings = get_embeddings_from_df(data)
-
-        already_sampled_embeddings = get_embeddings_from_df(preprocessor.labelled)
-
-        # Calculate cosine similarity between the new embeddings and labelled embeddings
-        cosine_similarities = cosine_similarity(embeddings, already_sampled_embeddings)
-
-        # Get average similarity for each new data point
-        avg_similarities = cosine_similarities.mean(axis=1)
-
-        # Get indices of the data points sorted by their average similarity
-        sorted_indices = np.argsort(avg_similarities)
-        print(sorted_indices)
-
-        # Choose the top 'sample_size' least similar data points
-        most_dissimilar_indices = sorted_indices[:sample_size]
-
-        # Return the most diverse data points
-        sampled_data = data.iloc[most_dissimilar_indices]
-
-        # Get the remaining data
-        remaining_data = data.drop(sampled_data.index)
-
-        return sampled_data, remaining_data, None
+            return sampled_data, remaining_data, pd.DataFrame()

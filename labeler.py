@@ -9,6 +9,10 @@ class WeaklyLabeller:
     def calc_error(control, subset):
         if control is None or subset is None:
             return 0
+
+        if len(subset) == 0:
+            return 0
+
         df = pd.merge(control, subset, on='Index', how='inner', suffixes=('_control', '_subset'))
         # Compare the columns on merged df
         df['is_diff'] = df['Class Index_control'] != df['Class Index_subset']
