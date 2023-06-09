@@ -105,7 +105,7 @@ class Main:
             init_sample, _, _ = self.sampler.sample(self.data, self.data.partial, init_sample_size)
             self.data.labelled = self.strong_labeler.label(init_sample)
             train_dataloader = to_data_loader(self.data.labelled, self.device.type)
-            self.trainer.train(train_dataloader, self.data, 0, 0)
+            self.trainer.train(train_dataloader, self.data, None, 0)
 
     def al(self, hyperparameters):
         # loss = []
