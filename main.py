@@ -86,6 +86,7 @@ class Main:
             'AL Iterations': al_iterations,
             'Patience': patience,
             'P. Label Conf.': delta,
+            'Delta Change': delta_rate,
             'PL from:': 'WL' if accept_weakly_labels else 'Self'
         }
 
