@@ -19,18 +19,6 @@ def transform_data(df):
 
 
 if __name__ == "__main__":
-    # Load the dataset
-    newsgroups_train = fetch_20newsgroups(subset='all')
-
-    # The data is a list of texts, and the target is the list of corresponding labels
-    texts = newsgroups_train.data
-    labels = newsgroups_train.target
-
-    # Create a DataFrame
-    df = pd.DataFrame({'text': texts, 'label': labels})
-
-    # Write DataFrame to a CSV file
-    df.to_csv('20newsgroups.csv', index=False)
 
     # Read files
     # df = pd.read_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/AG_NEWS_KAGGLE/test.csv')
@@ -57,9 +45,10 @@ if __name__ == "__main__":
 
     #dataset = load_dataset('glue', 'sst2')
     # Write fiels
-    # data = pd.read_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/medium.csv', index_col='Index')
-    # data = transform_data(data)
-    # data.to_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/medium_t.csv')
-    # data = pd.read_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/big_e.csv', index_col='Index')
-    # data = transform_data(data)
-    # data.to_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/big_t.csv')
+    # data = pd.read_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/very_big.csv', index_col='Index')
+    #data = transform_data(data)
+    # data.to_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/final_train.csv')
+    data = pd.read_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/test_f.csv')
+    data = transform_data(data)
+    data.index.name = 'Index'
+    data.to_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/final_test.csv')

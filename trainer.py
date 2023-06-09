@@ -67,7 +67,7 @@ class Trainer:
             results['epoch'] = self.total_epoch
             results = {**results, **self.evaluator.eval(self.model, valid=True)}
 
-            wandb.log(results)
+            # wandb.log(results)
             epoch += 1
             self.total_epoch += 1
 
