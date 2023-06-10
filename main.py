@@ -132,6 +132,7 @@ class Main:
                 train_set = self.data.labelled
             # --------------- AL PLUS --------------- #
             train_dataloader = to_data_loader(train_set, self.device.type)
+            print(f'Labeled: {self.data.labelled}')
             self.trainer.train(train_dataloader, self.data, pd.DataFrame(), 0)
 
             for i in range(al_iterations):
@@ -145,6 +146,7 @@ class Main:
                                                                                u_cap=1 - self.delta
                                                                                )
                 self.data.labelled = pd.concat([self.data.labelled, self.strong_labeler.label(sample)])
+                print(f'Labeled: {self.data.labelled}')
                 # --------------- AL PLUS --------------- #
                 if self.mode == 'AL+':
                     # Here has to choose with the help of confidence

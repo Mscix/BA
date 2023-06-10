@@ -53,7 +53,7 @@ class Sampler:
             sampled = data.sample(n=int(sample_size), random_state=42)
         else:
             sampled = data.sample(frac=sample_size, random_state=42)
-        # print(f'sampled: {sampled}')
+        print(f'sampled: {sampled}')
         remaining = data.drop(sampled.index)
         # remaining is returned twice the third return value is for pseudo labels
         return sampled, remaining, pd.DataFrame()
