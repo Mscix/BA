@@ -1,16 +1,5 @@
 import wandb
 
-# Initialize Wandb run
-
-
-
-
-# Log constant line plot
-
-
-# Finish Wandb run
-
-
 if __name__ == "__main__":
     hyperparameters = {
         'Mode': 'Standard C',
@@ -33,4 +22,3 @@ if __name__ == "__main__":
             wandb.log({'test accuracy': 0.9034, 'Strong Labels': strong_labels})
             print(strong_labels)
             strong_labels += 160
-

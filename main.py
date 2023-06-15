@@ -14,6 +14,7 @@ import copy
 import warnings
 import logging
 
+
 class Main:
     def __init__(self,
                  path_train,
@@ -91,9 +92,7 @@ class Main:
         if self.mode == 'Standard':
             self.standard_ml(self.hyperparameters)
         elif self.mode == 'Dev':
-            # Turn this into testing func
-            # self.test_weak_labeler()
-            self.test_calc_error()
+            print('Testing grounds')
         else:
             # Default
             self.al(self.hyperparameters)
@@ -119,8 +118,6 @@ class Main:
             # self.weak_labeler = KMeansLabeller(self.data, self.fixed_centroids)
             # --------------- AL PLUS --------------- #
             if self.mode == 'AL+':
-
-
                 # Initially trains on all Samples
                 self.data.partial = self.weak_labeler.label(self.data.partial)
                 train_set = self.data.labelled

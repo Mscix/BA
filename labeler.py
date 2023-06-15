@@ -108,4 +108,3 @@ class PredictionLabeller:
         # to_label['Class Index'] = class_indexes
         to_label.loc[:, 'Class Index'] = class_indexes
         return to_label
-

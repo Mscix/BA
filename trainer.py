@@ -10,7 +10,7 @@ import copy
 
 
 class Trainer:
-    def __init__(self,  model, device, evaluator, resetting_model, initial_weights, patience=3):
+    def __init__(self, model, device, evaluator, resetting_model, initial_weights, patience=3):
         self.model = model
         self.device = device
         self.optimizer = AdamW(params=self.model.parameters(), lr=5e-5)  # check if the optimizer ok like this
@@ -118,6 +118,3 @@ class Trainer:
                 return True
         print(f'Current Patience {self.patience_counter}/{self.patience}')
         return False
-
-
-
