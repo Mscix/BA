@@ -33,3 +33,6 @@ if __name__ == "__main__":
     create_subset(df, 10, 'small.csv')
     create_subset(df, 1000, 'medium.csv')
     create_subset(df, 10000, 'large.csv')
+
+    test_df = train_df.sort_values('Class Index')
+    create_subset(test_df, 10, 'small_test.csv')

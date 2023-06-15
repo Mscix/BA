@@ -38,7 +38,7 @@ class TestWeakLabeller(unittest.TestCase):
         error_rate = 0.25
         error_rate_2 = 0.3
         # Will break if this test is run on another system
-        data = Preprocessor('AG_NEWS_KAGGLE/small.csv', 'AG_NEWS_KAGGLE/small.csv', 'cpu')
+        data = Preprocessor('AG_NEWS_KAGGLE/small.csv', 'AG_NEWS_KAGGLE/small_test.csv', 'cpu')
         w = CustomLabeller(error_rate, data.control)
         w2 = CustomLabeller(error_rate, data.control)
         labelled_25 = w.label(data.control)

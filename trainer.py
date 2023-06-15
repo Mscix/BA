@@ -94,7 +94,7 @@ class Trainer:
         self.al_results['*recall'] = results['validation recall']
 
     def early_stopping(self, results):
-        print('Measured Loss: ' + str(results['avg Validation Loss']) +
+        print('Measured Loss: ' + str(results['avg validation Loss']) +
               ', Current Best Loss: ' + str(self.best_val_loss))
         # Lower loss obviously better
         if self.best_val_loss is None:

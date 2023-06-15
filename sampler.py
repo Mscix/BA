@@ -3,11 +3,11 @@ import math
 from preprocessor import to_data_loader, Preprocessor, get_embeddings_from_df
 import numpy as np
 import pandas as pd
-from labeler import PredictionLabeller
 
 from sklearn.cluster import KMeans
 from sklearn.metrics import pairwise_distances_argmin_min
 from sklearn.metrics.pairwise import cosine_similarity
+import warnings
 
 
 class Sampler:
@@ -117,7 +117,10 @@ class Sampler:
         mask_pseudo_labels = remaining.index.isin(pseudo_labels_i)
         pseudo_labels = remaining[mask_pseudo_labels]
         c_df['prediction'] = c_df['prediction'].apply(self.prediction_to_class)
-        mask = pseudo_labels.sort_index()['Class Index'] == c_df.sort_index()['prediction']
+        c_df.sort_index(inplace=True)
+        pseudo_labels.sort_index(inplace=True)
+        mask = pseudo_labels['Class Index'] == c_df['prediction']
+
         pseudo_labels = pseudo_labels[mask]
         return pseudo_labels
 

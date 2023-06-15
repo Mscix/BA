@@ -162,7 +162,7 @@ if __name__ == "__main__":
                         default='AG_NEWS_KAGGLE/small.csv')
 
     parser.add_argument('-tp', '--test_path', type=str, help='Path to the csv file with the test set.',
-                        default='AG_NEWS_KAGGLE/test.csv')
+                        default='AG_NEWS_KAGGLE/small_test.csv')
 
     parser.add_argument('-m', '--mode', type=str, choices=['AL', 'AL+', 'ALI', 'Standard', 'Dev'], default='AL+',
                         help='The Learning mode.')
