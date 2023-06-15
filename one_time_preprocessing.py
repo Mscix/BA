@@ -1,8 +1,5 @@
 from transformers import AutoTokenizer
 import pandas as pd
-from datasets import load_dataset
-from sklearn.datasets import fetch_20newsgroups
-import numpy as np
 
 
 def transform_data(df):
@@ -18,37 +15,21 @@ def transform_data(df):
     return df
 
 
+def create_subset(df, size_per_class, file_name):
+    subset_df = df.groupby('Class Index').head(size_per_class)
+
+    subset_df = subset_df.reset_index().rename(columns={'index': 'Index'})
+
+    subset_df = transform_data(subset_df)
+
+    subset_df.to_csv('AG_NEWS_KAGGLE/' + file_name, index=False)
+
+
 if __name__ == "__main__":
+    train_df = pd.read_csv('AG_NEWS_KAGGLE/train.csv')
 
-    # Read files
-    # df = pd.read_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/AG_NEWS_KAGGLE/test.csv')
-    # df = df.sort_values(by='Class Index')
-    #print(df.head())
-    #print(len(df))
+    df = train_df.sort_values('Class Index')
 
-    #classes = df['Class Index'].unique()
-    #balanced_subset = pd.DataFrame()
-
-    #for class_label in classes:
-        # Filter the dataset to extract samples from the current class
-    #    class_samples = df[df['Class Index'] == class_label].sample(n=200, random_state=42)
-
-        # Append the extracted samples to the balanced subset
-    #    balanced_subset = pd.concat([balanced_subset, class_samples])
-
-    # Reset the index of the balanced subset
-    #balanced_subset = balanced_subset.reset_index(drop=True)
-    #balanced_subset.index.name = 'Index'
-    #balanced_subset = transform_data(balanced_subset)
-
-    #balanced_subset.to_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/big_t_test.csv')
-
-    #dataset = load_dataset('glue', 'sst2')
-    # Write fiels
-    # data = pd.read_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/very_big.csv', index_col='Index')
-    #data = transform_data(data)
-    # data.to_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/final_train.csv')
-    data = pd.read_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/test_f.csv')
-    data = transform_data(data)
-    data.index.name = 'Index'
-    data.to_csv('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/final_test.csv')
+    create_subset(df, 10, 'small.csv')
+    create_subset(df, 1000, 'medium.csv')
+    create_subset(df, 10000, 'large.csv')

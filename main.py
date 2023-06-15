@@ -9,11 +9,10 @@ from labeler import KMeansLabeller, StrongLabeller, CustomLabeller, WeaklyLabell
 from sampler import Sampler
 import pandas as pd
 import wandb
-# import plotter as p
 import argparse
 import copy
 import warnings
-
+import logging
 
 class Main:
     def __init__(self,
@@ -22,7 +21,6 @@ class Main:
                  mode,
                  sampling_method,
                  weakly_error=0.25,
-                 epochs=1,
                  al_iterations=3,
                  init_sample_size=0.05,
                  n_sample_size=0.01,
@@ -32,6 +30,7 @@ class Main:
                  delta_rate=0.0
                  ):
 
+        logging.getLogger('transformers.modeling_utils').setLevel(logging.ERROR)
         # Load model
         model_name = "bert-base-cased"
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=4)
@@ -46,11 +45,12 @@ class Main:
         self.data = Preprocessor(path_train, path_test, self.device.type)
 
         self.mode = mode
-        weak_labeler = 'K-Means'
+        # weak_labeler = 'K-Means'
 
         self.fixed_centroids = True
-        # If Data sample too small there exists a possibility that there might not be a representative of
-        # each class. This will lead to problems when picking centroids. Therefor make the choice fixed.
+        # Following if-statement is only important if using K-Means
+        #   If Data sample too small there exists a possibility that there might not be a representative of
+        #   each class. This will lead to problems when picking centroids. Therefor make the choice fixed.
         if len(self.data.train_data) > 3000:
             self.fixed_centroids = False
             # Set data Labels to ambiguous number but only if fixed_centroids = false
@@ -72,7 +72,6 @@ class Main:
         self.delta = delta
         self.delta_rate = delta_rate
 
-        # pass the actual error rate also? because if insufficient data size
         self.hyperparameters = {
             'Mode': mode,
             'Weakly Error': 0 if mode != 'AL+' and mode != 'ALI' else weakly_error,
@@ -108,7 +107,6 @@ class Main:
             self.trainer.train(train_dataloader, self.data, None, 0)
 
     def al(self, hyperparameters):
-        # loss = []
         with wandb.init(project='active-learning-plus', config=hyperparameters):
             init_sample_size = hyperparameters['Init Sample Size']
             sample_size = hyperparameters['N-Sample']
@@ -117,13 +115,14 @@ class Main:
             print('AL Iteration: 0')
             init_sample, self.data.partial, _ = self.sampler.sample(self.data, self.data.partial, init_sample_size)
             self.data.labelled = self.strong_labeler.label(init_sample)
-
+            # Part of initial implementation:
+            # self.weak_labeler = KMeansLabeller(self.data, self.fixed_centroids)
             # --------------- AL PLUS --------------- #
             if self.mode == 'AL+':
-                # self.weak_labeler = KMeansLabeller(self.data, self.fixed_centroids)
+
+
                 # Initially trains on all Samples
                 self.data.partial = self.weak_labeler.label(self.data.partial)
-                # train_set = pd.concat([self.data.labelled, self.data.partial])
                 train_set = self.data.labelled
             elif self.mode == 'ALI':
                 self.data.partial = self.weak_labeler.label(self.data.partial)
@@ -132,12 +131,10 @@ class Main:
                 train_set = self.data.labelled
             # --------------- AL PLUS --------------- #
             train_dataloader = to_data_loader(train_set, self.device.type)
-            print(f'Labeled: {self.data.labelled}')
             self.trainer.train(train_dataloader, self.data, pd.DataFrame(), 0)
 
             for i in range(al_iterations):
                 print(f'AL Iteration: {i + 1}')
-                # Here should be split into 3 groups
                 sample, self.data.partial, pseudo_labels = self.sampler.sample(preprocessor=self.data,
                                                                                data=self.data.partial,
                                                                                sample_size=sample_size,
@@ -146,11 +143,8 @@ class Main:
                                                                                u_cap=1 - self.delta
                                                                                )
                 self.data.labelled = pd.concat([self.data.labelled, self.strong_labeler.label(sample)])
-                print(f'Labeled: {self.data.labelled}')
                 # --------------- AL PLUS --------------- #
                 if self.mode == 'AL+':
-                    # Here has to choose with the help of confidence
-                    # train_set = pd.concat([self.data.labelled, self.data.partial])
                     train_set = pd.concat([self.data.labelled, pseudo_labels])
                     if len(pseudo_labels) > pseudo_labels_len:
                         self.delta += self.delta_rate
@@ -163,37 +157,15 @@ class Main:
                 train_dataloader = to_data_loader(train_set, self.device.type)
                 self.trainer.train(train_dataloader, self.data, pseudo_labels, i + 1)
 
-    def test_weak_labeler(self):
-        w = CustomLabeller(0.25, self.data.control)
-        w2 = CustomLabeller(0.75, self.data.control)
-        w3 = CustomLabeller(0.25, self.data.control)
-        ones = self.data.control.copy()
-        ones['Class Index'] = 1
-        labelled_25 = w.label(self.data.control)
-        labelled_75 = w2.label(self.data.control)
-        labelled_ones = w3.label(ones)
-
-        print(labelled_25.sort_index().head(40))
-        print(labelled_75.sort_index().head(40))
-        print(labelled_ones.sort_index().head(40))
-
-    def test_calc_error(self):
-        error_rate = 0.25
-        w = CustomLabeller(error_rate, self.data.control)
-        labelled_25 = w.label(self.data.control)
-        print(f'df len: {len(self.data.control)}')
-        print(f'Error Rate : {error_rate}')
-        print(f'Calculated Error: {WeaklyLabeller.calc_error(self.data.control, labelled_25)}')
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process passed Hyperparameters.')
 
     parser.add_argument('-p', '--path', type=str, help='Path to the csv file with the data set.',
-                        default='/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/small_t.csv')
+                        default='AG_NEWS_KAGGLE/small.csv')
 
     parser.add_argument('-tp', '--test_path', type=str, help='Path to the csv file with the test set.',
-                        default='/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/small_t_test.csv')
+                        default='AG_NEWS_KAGGLE/test.csv')
 
     parser.add_argument('-m', '--mode', type=str, choices=['AL', 'AL+', 'ALI', 'Standard', 'Dev'], default='AL+',
                         help='The Learning mode.')
@@ -202,8 +174,8 @@ if __name__ == "__main__":
                                                                        'SD', 'DD'],
                         default='Random', help='Sampling method for active learning.')
 
-    parser.add_argument('-ep', '--epochs', type=int, default=1,
-                        help='How many epochs.')
+    # parser.add_argument('-ep', '--epochs', type=int, default=1,
+    #                    help='How many epochs.')
 
     parser.add_argument('-iss', '--init_sample_size', type=float, default=0.05,
                         help='Initial random sample size.')
@@ -234,7 +206,7 @@ if __name__ == "__main__":
     test_path = args.test_path
     pipeline_mode = args.mode
     _sampling_method = args.sampling_method
-    _epochs = args.epochs
+    # _epochs = args.epochs
     _init_sample_size = args.init_sample_size
     _n_sample_size = args.n_sample_size
     if _n_sample_size >= 1:
@@ -255,7 +227,6 @@ if __name__ == "__main__":
              pipeline_mode,
              _sampling_method,
              weakly_error=_weakly_error,
-             epochs=_epochs,
              al_iterations=_al_iterations,
              n_sample_size=_n_sample_size,
              init_sample_size=_init_sample_size,

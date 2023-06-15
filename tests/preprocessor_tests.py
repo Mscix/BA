@@ -13,7 +13,7 @@ from preprocessor import Preprocessor  # replace with the actual module name
 class TestPreprocessor(unittest.TestCase):
 
     def setUp(self):
-        self.preprocessor = Preprocessor('/Users/misha/Desktop/Bachelor-Thesis/BA/data_sets/the_one/small_t.csv', 'cpu')
+        self.preprocessor = Preprocessor('AG_NEWS_KAGGLE/small.csv', 'AG_NEWS_KAGGLE/small.csv', 'cpu')
 
     def test_init(self):
         # Test if initial data frame is loaded properly

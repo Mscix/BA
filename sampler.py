@@ -53,7 +53,6 @@ class Sampler:
             sampled = data.sample(n=int(sample_size), random_state=42)
         else:
             sampled = data.sample(frac=sample_size, random_state=42)
-        print(f'sampled: {sampled}')
         remaining = data.drop(sampled.index)
         # remaining is returned twice the third return value is for pseudo labels
         return sampled, remaining, pd.DataFrame()
@@ -97,7 +96,6 @@ class Sampler:
         # Create a pandas DataFrame from values and index
         df_values = pd.DataFrame({'index': data.index, 'value': values, 'prediction': predictions})
         df_values.set_index('index', inplace=True)
-        # print(df_values)
         # Sort DataFrame by value
         df_values.sort_values('value', ascending=False, inplace=True)
         # Get top sample_size indices based on uncertainty

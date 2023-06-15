@@ -45,7 +45,7 @@ class Trainer:
         # not 'while True:' just in case
         while epoch < 500:
             loss_accumulator = 0.0
-            # print(f'Epoch {epoch}')
+            print(f'Epoch {epoch}')
             # Loop through the batches
             for batch in train_dataloader:
                 # Get the batch
@@ -67,7 +67,7 @@ class Trainer:
             results['epoch'] = self.total_epoch
             results = {**results, **self.evaluator.eval(self.model, valid=True)}
 
-            # wandb.log(results)
+            wandb.log(results)
             epoch += 1
             self.total_epoch += 1
 
@@ -84,7 +84,6 @@ class Trainer:
             # Move the model and its tensors back to the GPU
             self.model = model.to(self.device)
             self.optimizer = AdamW(params=self.model.parameters(), lr=5e-6)
-            # self.current_accuracy = 0
             torch.cuda.empty_cache()
 
     def set_metrics(self, results):
@@ -95,8 +94,8 @@ class Trainer:
         self.al_results['*recall'] = results['validation recall']
 
     def early_stopping(self, results):
-        # print('Measured Loss: ' + str(results['avg Validation Loss']) +
-        #      ', Current Best Loss: ' + str(self.best_val_loss))
+        print('Measured Loss: ' + str(results['avg Validation Loss']) +
+              ', Current Best Loss: ' + str(self.best_val_loss))
         # Lower loss obviously better
         if self.best_val_loss is None:
             self.best_val_loss = results['avg validation Loss']
@@ -117,7 +116,7 @@ class Trainer:
                 self.best_val_loss = None
                 # return True to stop the loop
                 return True
-        # print(f'Current Patience {self.patience_counter}/{self.patience}')
+        print(f'Current Patience {self.patience_counter}/{self.patience}')
         return False
 
 
